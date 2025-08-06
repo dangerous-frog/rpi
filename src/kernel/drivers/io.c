@@ -1,4 +1,5 @@
 // GPIO
+#include "arm/util.h"
 
 enum {
     PERIPHERAL_BASE = 0xFE000000,
@@ -26,8 +27,7 @@ enum {
     Pull_None = 0,
 };
 
-void mmio_write(long reg, unsigned int val) { *(volatile unsigned int *)reg = val; }
-unsigned int mmio_read(long reg) { return *(volatile unsigned int *)reg; }
+
 
 unsigned int gpio_call(unsigned int pin_number, unsigned int value, unsigned int base, unsigned int field_size, unsigned int field_max) {
     unsigned int field_mask = (1 << field_size) - 1;
@@ -106,6 +106,10 @@ void uart_writeText(char *buffer) {
        if (*buffer == '\n') uart_writeByteBlockingActual('\r');
        uart_writeByteBlockingActual(*buffer++);
     }
+}
+
+void uart_writeChar(void* p, char character) {
+    uart_writeByteBlockingActual(character);
 }
 
 char uart_readChar() {

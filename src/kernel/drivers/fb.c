@@ -1,5 +1,5 @@
-#include "io.h"
-#include "mb.h"
+#include "drivers/io.h"
+#include "drivers/mb.h"
 #include "terminal.h"
 
 unsigned int width, height, pitch, isrgb;

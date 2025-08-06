@@ -1,3 +1,4 @@
 arm-gnu-toolchain
 kernel8.img
 build
+.vscode/

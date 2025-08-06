@@ -13,7 +13,7 @@ BUILDDIR = build
 SRCDIR = src
 
 # Global flags
-CFLAGS = -Wall -O2 -g -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS = -Wall -O2 -g -ffreestanding -nostdlib -nostartfiles
 CFLAGS += -Isrc/kernel/include -Isrc/libc/include
 
 all: kernel8.img
@@ -27,7 +27,7 @@ kernel8.img: $(BUILDDIR)
 	$(MAKE) -C $(SRCDIR)/kernel BUILDDIR=../../$(BUILDDIR)
 	$(MAKE) -C $(SRCDIR)/libc BUILDDIR=../../$(BUILDDIR)
 	$(LD) -nostdlib -T $(SRCDIR)/kernel/arch/aarch64/link.ld \
-		$(BUILDDIR)/*.o -o $(BUILDDIR)/kernel8.elf
+		$(BUILDDIR)/*.o build/*/*.o -o $(BUILDDIR)/kernel8.elf
 	$(OBJCOPY) -O binary $(BUILDDIR)/kernel8.elf kernel8.img
 
 clean:
