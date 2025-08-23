@@ -1,6 +1,6 @@
 # Inherit from parent
 CC ?= aarch64-none-elf-gcc
-CFLAGS += -Iinclude
+CFLAGS += -Iinclude 
 BUILDDIR ?= build
 
 # Source files

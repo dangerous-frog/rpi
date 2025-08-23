@@ -1,5 +1,6 @@
 # Inherit from parent
-CFLAGS += -Iinclude -I../libc/include
+# mstrict align needed or otherwise it breaks interestingly enough
+CFLAGS += -Iinclude -I../libc/include -mstrict-align
 BUILDDIR ?= build
 
 # Source files

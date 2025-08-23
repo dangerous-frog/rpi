@@ -42,7 +42,9 @@ el1_entry:
     mrs x0, cpacr_el1
     orr x0, x0, #(3 << 20)    // Enable FP/SIMD at EL1
     msr cpacr_el1, x0
+    
     isb
+    
 
 
     // Set stack to start below our code
