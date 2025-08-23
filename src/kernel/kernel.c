@@ -3,10 +3,22 @@
 #include "printf.h"
 #include "arm/util.h"
 #include "arm/irq.h"
+#include "sched.h"
 // TODO: move those refs from here so they aren't in include since they aren't arch specific
 
 
 extern void irq_vector_init( void );
+
+void process(char *array)
+{
+	while (1){
+		for (int i = 0; i < 5; i++){
+			uart_writeChar(0, array[i]);
+			delay(10000000);
+		}
+	}
+}
+
 
 void main()
 {
@@ -30,15 +42,31 @@ void main()
 
 
     drawString(100,100,"Hello world!",0x0f);
-    while (1) {
-        // Here we will do uart reading and writing lol
-        // Too poor for interrupts just now
+    int res = copy_process((unsigned long)&process, (unsigned long)"12345");
+	if (res != 0) {
+		printf("error while starting process 1");
+		return;
+	}
+	res = copy_process((unsigned long)&process, (unsigned long)"abcde");
+	if (res != 0) {
+		printf("error while starting process 2");
+		return;
+	}
 
-        char read = uart_readChar();
-        if (read != '\0') {
-            printf("%c", read);
-        } 
+	while (1){
+		schedule();
+	}	
 
 
-    }
+    // while (1) {
+    //     // Here we will do uart reading and writing lol
+    //     // Too poor for interrupts just now
+
+    //     char read = uart_readChar();
+    //     if (read != '\0') {
+    //         printf("%c", read);
+    //     } 
+
+
+    // }
 }

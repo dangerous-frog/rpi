@@ -2,6 +2,7 @@
 #include "arm/entry.h"
 #include "arm/irq.h"
 #include "arm/util.h"
+#include "sched.h"
 #include "stddef.h"
 #include "stdint.h"
 
@@ -31,10 +32,15 @@ static uint64_t timer_freq;
 
 
 
+void load_timer_interrupt() {
+	uint64_t count;
+	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
+	count += timer_freq / 4;  // 2 second tick
+	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
+}
 // TODO: this should include core, for now only 0
 void enable_interrupt(int irq_num)
 {	
-
 
 	// For any changes to take effect, we need to disable/enable gic
 	mmio_write(GICD, 0);
@@ -73,13 +79,9 @@ void enable_interrupt(int irq_num)
     // Get timer frequency
     asm volatile("mrs %0, cntfrq_el0" : "=r"(timer_freq));
 
-	// Set next interrupt in 2 seconds  
-	uint64_t count;
-	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
-	// count += timer_freq * 2;  // 2 second tick
-	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
+	load_timer_interrupt();	
     
-    // // Enable timer with interrupt
+    // Enable timer with interrupt
     asm volatile("msr cntp_ctl_el0, %0" : : "r"(1));
 
 
@@ -111,15 +113,15 @@ void handle_irq(void) {
     uint32_t irq_id = mmio_read(GICC_IAR) & 0x3FF;
     
     if (irq_id == 30) {
-        printf("Timer interrupt! (2 second tick)\n");
-        
+        // printf("elo");
         // Set next timer interrupt (2 seconds from now)
-        uint64_t current;
-        asm volatile("mrs %0, cntpct_el0" : "=r"(current));
-        current += timer_freq * 2;  // 2 second interval
-        asm volatile("msr cntp_cval_el0, %0" : : "r"(current));
-        
+		// Because timer_tick will likely switch context, it's very important that we first process/restart the interrupt
+		load_timer_interrupt();
         mmio_write(GICC_EOIR, irq_id);
+
+		timer_tick();
+		
+        
     } else if (irq_id == 1023) {
         printf("Spurious interrupt\n");
     } else {
