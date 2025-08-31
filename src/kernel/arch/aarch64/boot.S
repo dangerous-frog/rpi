@@ -1,4 +1,6 @@
 #include "arm/sysregs.h"
+#include "mm.h"
+#include "arm/mmu.h"
 
 .section ".text.boot"  // Make sure the linker puts this at the start of the kernel image
 
@@ -46,23 +48,125 @@ el1_entry:
     isb
     
 
-
-    // Set stack to start below our code
-    ldr     x1, =0x400000
-    mov     sp, x1
-
     // Clean the BSS section
-    ldr     x1, =__bss_start     // Start address
-    ldr     w2, =__bss_size      // Size of the section
-3:  cbz     w2, 4f               // Quit loop if zero
-    str     xzr, [x1], #8
-    sub     w2, w2, #8
-    cbnz    w2, 3b               // Loop if non-zero
+    adrp     x0, bss_begin     // Start address
+    add     x0, x0, :lo12:bss_begin
+    adrp     x1, bss_end      // Size of the section
+    add     x1, x1, :lo12:bss_end
+    sub    x1, x1, x0
+    bl      memzero
 
-    // Jump to our main() routine in C (make sure it doesn't return)
-4:  bl      main
-    // In case it does return, halt the master core too
-    b       1b
+
+    bl      create_page_tables
+
+    // Since we just actually started using virt mem
+    // then the stack pointer gotta use it too
+    mov     x0, #VA_START
+    add     sp, x0, #LOW_MEMORY
+
+    // Tell mmu where our PGD is
+    adrp    x0, pg_dir
+    msr     ttbr1_el1, x0
+
+    // Configure MMU, 4kb pages
+    ldr	x0, =(TCR_VALUE)		
+	msr	tcr_el1, x0
+
+    // Set mair values
+	ldr	x0, =(MAIR_VALUE)
+	msr	mair_el1, x0
+
+    // After turning on MMU, we can't just branch
+    // It would hold old address
+    // so we use the one from linker
+    ldr	x2, =kernel_main
+
+	mov	x0, #SCTLR_MMU_ENABLED				
+	msr	sctlr_el1, x0 // Enable mmu
+
+	br 	x2
+
+
+    b   1b // Loop forever just in case
+
+
+    .macro	create_pgd_entry, tbl, virt, tmp1, tmp2
+	create_table_entry \tbl, \virt, PGD_SHIFT, \tmp1, \tmp2
+	create_table_entry \tbl, \virt, PUD_SHIFT, \tmp1, \tmp2
+	.endm
+
+    /*
+        tbl -> pointer to region where we gonna plop it
+        virt -> vaddr which we're mapping rn
+        shift -> shift needed to get table index
+        tmp1, tmp2 -> as name suggests, temp regs
+    */
+    .macro	create_table_entry, tbl, virt, shift, tmp1, tmp2
+	lsr	    \tmp1, \virt, #\shift                       // Shift to extract index bits
+	and	    \tmp1, \tmp1, #PTRS_PER_TABLE - 1	// Mask to get index
+	// we know we have pages on top of each other
+    // so advancing this by PAGE_SIZE just gives next table in hierarchy
+    add	    \tmp2, \tbl, #PAGE_SIZE             
+	orr	    \tmp2, \tmp2, #MM_TYPE_PAGE_TABLE	// Setting these bits means it's table
+	// We store our entry (contents of tmp2) into tbl but index (tmp1) * 8 (left shift)
+    // we do it times 8 since it is byte aligned and each entry is 8 bytes
+    str	    \tmp2, [\tbl, \tmp1, lsl #3]
+	add	    \tbl, \tbl, #PAGE_SIZE					// next level table page
+	.endm
+
+    /*
+        tbl -> pointer to PMD table
+        phys -> actual address to be mapped
+        start -> virt address of section to be mapped
+        end -> virt address of the last section to be mapped
+        flags -> flags that need to be copied into block descriptor
+        tmp1 -> tmp reg
+     */
+    .macro	create_block_map, tbl, phys, start, end, flags, tmp1
+	lsr	\start, \start, #SECTION_SHIFT
+	and	\start, \start, #PTRS_PER_TABLE - 1			// table index
+	lsr	\end, \end, #SECTION_SHIFT
+	and	\end, \end, #PTRS_PER_TABLE - 1				// table end index
+    // Now both start and end hold indexes corresponding to og addresses
+	lsr	\phys, \phys, #SECTION_SHIFT                // Clear first part of addr
+	mov	\tmp1, #\flags
+	orr	\phys, \tmp1, \phys, lsl #SECTION_SHIFT			// table entry content
+9999:	str	\phys, [\tbl, \start, lsl #3]				// store the entry
+	add	\start, \start, #1					// next entry
+	add	\phys, \phys, #SECTION_SIZE				// next block
+	cmp	\start, \end
+	b.ls	9999b
+	.endm
+
+create_page_tables:
+    mov     x29, x30 // Save link register to x29
+
+    // Zero the area where we'll have our table
+    adrp    x0, pg_dir
+    mov     x1, #PG_DIR_SIZE
+    bl      memzero
+
+    // Here we create the table entries for PGD and PUD
+    adrp    x0, pg_dir
+    mov     x1, #VA_START
+    create_pgd_entry x0, x1, x2, x3
+
+    /* Mapping kernel and init stack*/
+	mov 	x1, xzr							// start mapping from physical offset 0
+	mov 	x2, #VA_START						// first virtual address
+	ldr	x3, =(VA_START + DEVICE_BASE - SECTION_SIZE)		// last virtual address
+	create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
+
+	/* Mapping device memory*/
+	mov 	x1, #DEVICE_BASE					// start mapping from device base address 
+	ldr 	x2, =(VA_START + DEVICE_BASE)				// first virtual address
+	ldr	x3, =(VA_START + PHYS_MEMORY_SIZE - SECTION_SIZE)	// last virtual address
+	create_block_map x0, x1, x2, x3, MMU_DEVICE_FLAGS, x4
+
+	mov	x30, x29						// restore return address
+	ret
+
+
 
 .global get_el
 get_el:

@@ -152,6 +152,8 @@ el0_sync:
 	lsr		x24, x25, #ESR_ELx_EC_SHIFT	// Get class of exception
 	cmp		x24, #ESR_ELx_EC_SVC64 // Is it syscall?
 	b.eq 	el0_svc // Yessir
+	cmp    x24, #ESR_ELx_EC_DABT_LOW // is it data abort?
+	b.eq	el0_da
 	handle_invalid_entry 0, SYNC_ERROR // Nope, we got duped
 
 
@@ -180,6 +182,17 @@ ret_from_syscall:
 	str		x0, [sp, #S_X0] // Save result in user's X0
 	kernel_exit 0
 
+el0_da:
+	bl		enable_irq
+	mrs		x0, far_el1 // address we tried to access
+	mrs		x1, esr_el1 // syndrome
+	bl		do_mem_abort
+	cmp		x0, 0
+	b.eq 	1f
+	handle_invalid_entry	0, DATA_ABORT_ERROR
+1:
+	bl	disable_irq
+	kernel_exit	0
 
 
 el0_irq:

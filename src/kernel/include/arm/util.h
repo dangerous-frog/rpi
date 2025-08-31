@@ -7,5 +7,7 @@ unsigned int mmio_read(long reg);
 extern void enable_irq( void);
 extern void disable_irq(void);
 void delay(int ms);
+extern void set_pgd(unsigned long pgd);
+extern unsigned long get_pgd();
 
 #endif  /*_UTILS_H */

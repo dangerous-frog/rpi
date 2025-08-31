@@ -59,6 +59,21 @@ struct cpu_context {
 	unsigned long pc;
 };
 
+#define MAX_PROCESS_PAGES			16	// 64 kB process
+
+struct user_page {
+	unsigned long phys_addr;
+	unsigned long virt_addr;
+};
+
+struct mm_struct {
+	unsigned long pgd;
+	int user_pages_count;
+	struct user_page user_pages[MAX_PROCESS_PAGES];
+	int kernel_pages_count;
+	unsigned long kernel_pages[MAX_PROCESS_PAGES];
+};
+
 #define PF_KTHREAD		            	0x00000002	
 
 struct task_struct {
@@ -69,6 +84,7 @@ struct task_struct {
 	long preempt_count; // if > 0, then critical section
 	unsigned long stack;
 	unsigned long flags;
+	struct mm_struct mm;
 };
 
 
@@ -80,13 +96,14 @@ extern void preempt_enable(void);
 extern void switch_to(struct task_struct* next);
 extern void cpu_switch_to(struct task_struct* prev, struct task_struct* next);
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack);
-int move_to_user_mode(unsigned long pc);
+int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc);
 struct pt_regs * task_pt_regs(struct task_struct *tsk);
 void exit_process();
 
 #define INIT_TASK \
-/*cpu_context*/	{ {0,0,0,0,0,0,0,0,0,0,0,0,0}, \
-/* state etc */	0,0,1,0,0, PF_KTHREAD \
+/*cpu_context*/ { { 0,0,0,0,0,0,0,0,0,0,0,0,0}, \
+/* state etc */	 0,0,15, 0, PF_KTHREAD, \
+/* mm */ { 0, 0, {{0}}, 0, {0}} \
 }
 
 #endif

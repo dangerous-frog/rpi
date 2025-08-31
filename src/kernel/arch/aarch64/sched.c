@@ -98,10 +98,10 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     // We're in some task so no preemption cause that's gonna explode
     struct task_struct *p;
 
-    p = (struct task_struct *) get_free_page(); // Let's get some of that memory for new task
+    unsigned long page = allocate_kernel_page();
+    p = (struct task_struct * )page;
     if (!p)
         return 1;
-
     struct pt_regs *childregs = task_pt_regs(p);
 	memzero((unsigned long)childregs, sizeof(struct pt_regs));
 
@@ -116,6 +116,7 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
 		childregs->regs[0] = 0;
 		childregs->sp = stack + PAGE_SIZE;
 		p->stack = stack;
+        copy_virt_memory(p); // We need to copy virt mem in user space
     }
 
     p->flags = clone_flags;
@@ -139,20 +140,18 @@ struct pt_regs * task_pt_regs(struct task_struct *tsk){ // To my understanding
 	return (struct pt_regs *)p;
 }
 
-int move_to_user_mode(unsigned long pc) {
-    printf("moving to user mode\n");
-    struct pt_regs * regs = task_pt_regs(current);
-    memzero((unsigned long) regs, sizeof(*regs));
-    memzero((unsigned long)&current->cpu_context, sizeof(struct cpu_context));
-    regs->pc = pc;
-    regs->pstate = PSR_MODE_EL0t;
-    unsigned long stack = get_free_page();
-    if (!stack) {
-        return -1;
-    }
-    regs->sp = stack + PAGE_SIZE;
-    current->stack = stack;
-    return 0;
+int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) {
+    struct pt_regs *regs = task_pt_regs(current);
+	regs->pstate = PSR_MODE_EL0t;
+	regs->pc = pc;
+	regs->sp = 2 *  PAGE_SIZE;  // For now, no more than 1 page text and 1 page stack
+	unsigned long code_page = allocate_user_page(current, 0);
+	if (code_page == 0)	{
+		return -1;
+	}
+	memcpy(code_page, start, size); // Copies to virt memory we allocated
+	set_pgd(current->mm.pgd); // activates translation tables for this process
+	return 0;
 }
 
 void exit_process(){
@@ -169,3 +168,4 @@ void exit_process(){
     preempt_enable();
     schedule();
 }
+
