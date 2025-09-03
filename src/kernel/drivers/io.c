@@ -1,8 +1,7 @@
 // GPIO
 #include "arm/util.h"
+#include "drivers/io.h"
 
-enum {
-    PERIPHERAL_BASE = 0xFE000000,
     // Why this peripheral base, you might ask?
     // in manual register base is 0x7e20_0000, which is legacy address, but wait a minute, mister
 
@@ -12,11 +11,10 @@ enum {
     // This is difference of 200_0000
     // so we add it to our to get our peripheral base at 0xFe00_0000
     // then from gpfsel0 we always add at least 20_0000 as you can see below
-    GPFSEL0         = PERIPHERAL_BASE + 0x200000,
-    GPSET0          = PERIPHERAL_BASE + 0x20001C,
-    GPCLR0          = PERIPHERAL_BASE + 0x200028,
-    GPPUPPDN0       = PERIPHERAL_BASE + 0x2000E4
-};
+#define GPFSEL0         PERIPHERAL_BASE + 0x200000
+#define GPSET0          PERIPHERAL_BASE + 0x20001C
+#define GPCLR0          PERIPHERAL_BASE + 0x200028
+#define GPPUPPDN0       PERIPHERAL_BASE + 0x2000E4
 
 enum {
     GPIO_MAX_PIN       = 53, 
@@ -29,14 +27,14 @@ enum {
 
 
 
-unsigned int gpio_call(unsigned int pin_number, unsigned int value, unsigned int base, unsigned int field_size, unsigned int field_max) {
+unsigned int gpio_call(unsigned int pin_number, unsigned int value, unsigned long base, unsigned int field_size, unsigned int field_max) {
     unsigned int field_mask = (1 << field_size) - 1;
   
     if (pin_number > field_max) return 0;
     if (value > field_mask) return 0; 
 
     unsigned int num_fields = 32 / field_size;
-    unsigned int reg = base + ((pin_number / num_fields) * 4);
+    unsigned long reg = base + ((pin_number / num_fields) * 4);
     unsigned int shift = (pin_number % num_fields) * field_size;
 
     unsigned int curval = mmio_read(reg);

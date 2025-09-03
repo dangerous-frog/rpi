@@ -46,7 +46,7 @@ void enable_interrupt(int irq_num)
 	mmio_write(GICD, 0);
         
     // Set target CPU (assuming CPU0)
-    int reg = irq_num / 4;
+    unsigned long reg = irq_num / 4;
     int shift = (irq_num % 4) * 8;
     mmio_write(GICD_ITARGETSRn + reg*4, 1 << shift);
     

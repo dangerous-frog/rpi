@@ -1,7 +1,8 @@
 #ifndef	_P_IRQ_H
 #define	_P_IRQ_H
+#include "mm.h"
 
-#define PBASE 0xFF800000 // taken from manual interrupts ch.
+#define PBASE 0xFF800000 + VA_START // taken from manual interrupts ch.
 
 #define PERI_IRQ_ROUTE0     (PBASE + 0x24)
 #define LOCAL_TIMER_CONTROL (PBASE + 0x34)
@@ -12,7 +13,7 @@
 #define CLOCK_TICKS         20000 // 250 000 000, should fit
 
 // Below we have the registers for the GIC
-#define GIC_BASE 0xFF840000
+#define GIC_BASE 0xFF840000 + VA_START
 
 // According to manual we have 2 important ares
 // 1. Distributor at + 0x1000

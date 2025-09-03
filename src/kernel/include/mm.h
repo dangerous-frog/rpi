@@ -5,7 +5,8 @@
 
 #define VA_START 			0xffff000000000000
 
-#define PHYS_MEMORY_SIZE 		0x40000000	
+#define IDENTITY_MAP_END 		0x40000000	
+#define PHYS_MEMORY_SIZE 		0x100000000	
 
 #define PAGE_MASK			0xfffffffffffff000
 
@@ -19,6 +20,9 @@
 
 //  looks goofy but I don't want to rewrite whole manual
 #define DEVICE_BASE     0xFC000000
+#define DEVICE_END      0x100000000
+
+
 #define LOW_MEMORY      (2 * SECTION_SIZE)
 #define HIGH_MEMORY     DEVICE_BASE
 
@@ -28,11 +32,13 @@
 
 #define PTRS_PER_TABLE	(1 << TABLE_SHIFT)
 
+#define PUD_TARGET_OFFSET 30 // 2mb * entries so 1gb so 2^30
+
 #define PGD_SHIFT		PAGE_SHIFT + 3*TABLE_SHIFT
 #define PUD_SHIFT		PAGE_SHIFT + 2*TABLE_SHIFT
 #define PMD_SHIFT		PAGE_SHIFT + TABLE_SHIFT
 
-#define PG_DIR_SIZE		(3 * PAGE_SIZE)
+#define PG_DIR_SIZE		(6 * PAGE_SIZE)
 
 #ifndef __ASSEMBLER__
 

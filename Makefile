@@ -13,7 +13,7 @@ BUILDDIR = build
 SRCDIR = src
 
 # Global flags
-CFLAGS = -Wall -O2 -g -ffreestanding -nostdlib -nostartfiles
+CFLAGS = -Wall -Og -g -ffreestanding -nostdlib -nostartfiles
 CFLAGS += -Isrc/kernel/include -Isrc/libc/include
 
 all: kernel8.img

@@ -1,4 +1,6 @@
-#define PERIPHERAL_BASE 0xFE000000
+#include "mm.h"
+
+#define PERIPHERAL_BASE (0xFE000000 + VA_START)
 
 void uart_init();
 void uart_writeText(char *buffer);
@@ -6,5 +8,5 @@ void uart_writeText(char *buffer);
 void uart_writeChar(void* p, char character);
 char uart_readChar();
 
-void mmio_write(long reg, unsigned int val);
-unsigned int mmio_read(long reg);
+void mmio_write(unsigned long reg, unsigned int val);
+unsigned int mmio_read(unsigned long reg);

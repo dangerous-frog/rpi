@@ -35,6 +35,11 @@ _start:
 
     eret // exception return
 
+.macro print_hex, reg
+    mov     x0, \reg
+    mov     x1, #0x3C000000     // QEMU debug console address
+    str     x0, [x1]
+.endm
 
 el1_entry:
     // Seems el1 doesn't have fp enabled by default
@@ -49,11 +54,10 @@ el1_entry:
     
 
     // Clean the BSS section
-    adrp     x0, bss_begin     // Start address
-    add     x0, x0, :lo12:bss_begin
+    adr     x0, bss_begin     // Start address
     adrp     x1, bss_end      // Size of the section
     add     x1, x1, :lo12:bss_end
-    sub    x1, x1, x0
+    sub     x1, x1, x0
     bl      memzero
 
 
@@ -67,6 +71,11 @@ el1_entry:
     // Tell mmu where our PGD is
     adrp    x0, pg_dir
     msr     ttbr1_el1, x0
+
+    print_hex x0
+
+    adrp    x0, pg_dir_identity
+    msr     ttbr0_el1, x0 // for identity mapping
 
     // Configure MMU, 4kb pages
     ldr	x0, =(TCR_VALUE)		
@@ -89,10 +98,25 @@ el1_entry:
 
     b   1b // Loop forever just in case
 
-
-    .macro	create_pgd_entry, tbl, virt, tmp1, tmp2
-	create_table_entry \tbl, \virt, PGD_SHIFT, \tmp1, \tmp2
-	create_table_entry \tbl, \virt, PUD_SHIFT, \tmp1, \tmp2
+    //                          0   1       2                 3   4
+    .macro	create_pgd_entry, tbl, virt, target_table_phys, tmp1, tmp2
+    mov     \tmp1, #1
+    lsl     \tmp1, \tmp1, #PUD_TARGET_OFFSET 
+    add	    \target_table_phys, \tbl, #PAGE_SIZE                 // We know 1st PMD is after PGD   
+	create_table_entry \tbl, \virt, PGD_SHIFT, \tmp2, \target_table_phys
+    add	    \tbl, \tbl, #PAGE_SIZE					// next level table page
+    add     \target_table_phys, \target_table_phys, #PAGE_SIZE 
+	create_table_entry \tbl, \virt, PUD_SHIFT, \tmp2, \target_table_phys // 1st PMD
+    add     \virt, \virt, \tmp1
+    add     \target_table_phys, \target_table_phys, #PAGE_SIZE                 // Next one follows it and so on....
+    create_table_entry \tbl, \virt, PUD_SHIFT, \tmp2, \target_table_phys // 2nd PMD
+    add     \virt, \virt, \tmp1
+    add     \target_table_phys, \target_table_phys, #PAGE_SIZE
+    create_table_entry \tbl, \virt, PUD_SHIFT, \tmp2, \target_table_phys // 3rd PMD
+    add     \virt, \virt, \tmp1
+    add     \target_table_phys, \target_table_phys, #PAGE_SIZE             
+    create_table_entry \tbl, \virt, PUD_SHIFT, \tmp2, \target_table_phys // 4th PMD
+    add     \tbl, \tbl, #PAGE_SIZE
 	.endm
 
     /*
@@ -101,17 +125,14 @@ el1_entry:
         shift -> shift needed to get table index
         tmp1, tmp2 -> as name suggests, temp regs
     */
-    .macro	create_table_entry, tbl, virt, shift, tmp1, tmp2
+    .macro	create_table_entry, tbl, virt, shift, tmp1, target_table_phys
 	lsr	    \tmp1, \virt, #\shift                       // Shift to extract index bits
 	and	    \tmp1, \tmp1, #PTRS_PER_TABLE - 1	// Mask to get index
-	// we know we have pages on top of each other
-    // so advancing this by PAGE_SIZE just gives next table in hierarchy
-    add	    \tmp2, \tbl, #PAGE_SIZE             
-	orr	    \tmp2, \tmp2, #MM_TYPE_PAGE_TABLE	// Setting these bits means it's table
+	orr	    \target_table_phys, \target_table_phys, #MM_TYPE_PAGE_TABLE	// Setting these bits means it's table
+    // Also we're modifying \target_table but it's only lower bits, should not be an issue
 	// We store our entry (contents of tmp2) into tbl but index (tmp1) * 8 (left shift)
     // we do it times 8 since it is byte aligned and each entry is 8 bytes
-    str	    \tmp2, [\tbl, \tmp1, lsl #3]
-	add	    \tbl, \tbl, #PAGE_SIZE					// next level table page
+    str	    \target_table_phys, [\tbl, \tmp1, lsl #3]
 	.endm
 
     /*
@@ -145,22 +166,41 @@ create_page_tables:
     adrp    x0, pg_dir
     mov     x1, #PG_DIR_SIZE
     bl      memzero
+    adrp    x0, pg_dir_identity
+    mov     x1, #PG_DIR_SIZE
+    bl      memzero
+
+
+    // Create identity mapping for initial code
+    adrp    x0, pg_dir_identity
+    mov     x1, #0
+    create_pgd_entry    x0, x1, x2, x3, x4
+
+    // Nothing special here since it just fills 1st PMD
+    mov     x1, #0
+    mov     x2, #0
+    mov     x3, #0x200000
+    create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
+
 
     // Here we create the table entries for PGD and PUD
     adrp    x0, pg_dir
     mov     x1, #VA_START
-    create_pgd_entry x0, x1, x2, x3
+    create_pgd_entry x0, x1, x2, x3, x4
 
     /* Mapping kernel and init stack*/
+    // This also just fills 1st PMD
 	mov 	x1, xzr							// start mapping from physical offset 0
 	mov 	x2, #VA_START						// first virtual address
-	ldr	x3, =(VA_START + DEVICE_BASE - SECTION_SIZE)		// last virtual address
+	ldr	    x3, =(VA_START + HIGH_MEMORY - SECTION_SIZE)		// last virtual address
 	create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
 
 	/* Mapping device memory*/
+    adrp    x0, pg_dir
+    add     x0, x0, #(PAGE_SIZE * 5) // We map devices to last table
 	mov 	x1, #DEVICE_BASE					// start mapping from device base address 
 	ldr 	x2, =(VA_START + DEVICE_BASE)				// first virtual address
-	ldr	x3, =(VA_START + PHYS_MEMORY_SIZE - SECTION_SIZE)	// last virtual address
+	ldr	    x3, =(VA_START + DEVICE_END - SECTION_SIZE)	// last virtual address
 	create_block_map x0, x1, x2, x3, MMU_DEVICE_FLAGS, x4
 
 	mov	x30, x29						// restore return address

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Start QEMU in background
-qemu-system-aarch64 -M raspi4b -serial null -serial stdio \
-    -d int \
-    -device loader,file=kernel8.img,addr=0x80000 -s -S &
+qemu-system-aarch64 -M raspi4b -serial null -serial stdio -semihosting -display none -semihosting-config enable=on,target=native\
+    -d int,mmu \
+    -kernel kernel8.img -s -S &
 QEMU_PID=$!
 
 # Kill QEMU when script exits
