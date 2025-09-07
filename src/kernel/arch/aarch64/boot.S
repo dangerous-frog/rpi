@@ -179,7 +179,7 @@ create_page_tables:
     // Nothing special here since it just fills 1st PMD
     mov     x1, #0
     mov     x2, #0
-    mov     x3, #0x200000
+    mov     x3, #0x200000 // only map first 2mb
     create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
 
 
@@ -192,7 +192,7 @@ create_page_tables:
     // This also just fills 1st PMD
 	mov 	x1, xzr							// start mapping from physical offset 0
 	mov 	x2, #VA_START						// first virtual address
-	ldr	    x3, =(VA_START + HIGH_MEMORY - SECTION_SIZE)		// last virtual address
+	ldr	    x3, =(VA_START + INITIAL_MAP_END - SECTION_SIZE)		// last virtual address
 	create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
 
 	/* Mapping device memory*/

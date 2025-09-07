@@ -5,7 +5,14 @@
 
 #define VA_START 			0xffff000000000000
 
-#define IDENTITY_MAP_END 		0x40000000	
+// This one outlines 1gb
+// Also as a whole, this probably ought to be fixed
+// Cause this is kernel mem and it still includes stuff like gpu mem
+// So if a page gets assigned there we're fucked
+// but oopsie daisy, I'm gonna fix it later //TODO: fix
+// Buuuuut, this is literally my first os
+// Cut me some slack
+#define INITIAL_MAP_END 		0x40000000	
 #define PHYS_MEMORY_SIZE 		0x100000000	
 
 #define PAGE_MASK			0xfffffffffffff000

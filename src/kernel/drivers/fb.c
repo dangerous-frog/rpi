@@ -64,8 +64,10 @@ void fb_init()
 
 void drawPixel(int x, int y, unsigned char attr)
 {
-    int offs = (y * pitch) + (x * 4);
-    *((unsigned int*)(fb + offs)) = vgapal[attr & 0x0f];
+    unsigned long offs = (y * pitch) + (x * 4);
+    unsigned char *fb_ptr = fb;
+    fb_ptr += VA_START;
+    *((unsigned long*)(fb_ptr + offs)) = vgapal[attr & 0x0f];
 }
 
 void drawRect(int x1, int y1, int x2, int y2, unsigned char attr, int fill)

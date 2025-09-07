@@ -73,9 +73,8 @@ void kernel_main()
     irq_vector_init();
     enable_irq();
     enable_interrupt(30);
-
-    printf("hello");
-
+    drawString(100,100,"Hello world!",0x0f);
+    
 
     int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
 	if (res < 0) {

@@ -35,7 +35,8 @@ static uint64_t timer_freq;
 void load_timer_interrupt() {
 	uint64_t count;
 	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
-	count += timer_freq / 4;  // 2 second tick
+	// /4 is 1 sec
+	count += timer_freq / 8192;  // 0.0004 //TODO: see if it does it
 	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
 }
 // TODO: this should include core, for now only 0

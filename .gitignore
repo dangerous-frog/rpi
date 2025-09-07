@@ -2,3 +2,6 @@ arm-gnu-toolchain
 kernel8.img
 build
 .vscode/
+note.txt
+.gitignore
+.gitignore
