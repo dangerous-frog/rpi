@@ -6,6 +6,7 @@
 #include "sched.h"
 #include "arm/sys.h"
 #include "user.h"
+#include "heap.h"
 
 
 
@@ -68,6 +69,8 @@ void kernel_main()
     fb_init();
 
     init_printf(0, uart_writeChar);    
+
+    heap_init();
 
     // Set up timer interrupt
     irq_vector_init();

@@ -4,4 +4,5 @@ build
 .vscode/
 note.txt
 .gitignore
-.gitignore
+dump_detailed.S
+dump.S
