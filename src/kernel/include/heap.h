@@ -10,7 +10,7 @@
 
 
 typedef struct heap_block {
-    uint32_t is_used; // Has to be 32, cause of alignment
+    uint8_t is_used; 
     struct heap_block* next_block; 
     struct heap_block* prev_block;
 } heap_block_t;  

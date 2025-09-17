@@ -69,8 +69,8 @@ void kernel_main()
     fb_init();
 
     init_printf(0, uart_writeChar);    
-
     heap_init();
+    sched_init();
 
     // Set up timer interrupt
     irq_vector_init();

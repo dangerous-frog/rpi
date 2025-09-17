@@ -32,7 +32,7 @@ struct pt_regs {
 
 #define THREAD_SIZE 4096
 
-#define NR_TASKS    64
+#define NR_TASKS    16
 
 enum TASK_STATE {
     TASK_RUNNING,
@@ -40,7 +40,7 @@ enum TASK_STATE {
 };
 
 extern struct task_struct *current;
-extern struct task_struct * task[NR_TASKS];
+extern struct task_struct ** task;
 extern int nr_tasks;
 
 struct cpu_context {
@@ -100,10 +100,15 @@ int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc);
 struct pt_regs * task_pt_regs(struct task_struct *tsk);
 void exit_process();
 
-#define INIT_TASK \
-/*cpu_context*/ { { 0,0,0,0,0,0,0,0,0,0,0,0,0}, \
-/* state etc */	 0,0,15, 0, PF_KTHREAD, \
-/* mm */ { 0, 0, {{0}}, 0, {0}} \
+#define INIT_TASK { \
+    /* cpu_context */ { 0,0,0,0,0,0,0,0,0,0,0,0,0 }, \
+    /* state */       TASK_RUNNING, \
+    /* counter */     0, \
+    /* priority */    15, \
+    /* preempt_count */ 0, \
+    /* stack */       0, \
+    /* flags */       PF_KTHREAD, \
+    /* mm */          { 0, 0, {{0}}, 0, {0} } \
 }
 
 #endif

@@ -2,14 +2,17 @@
 #include "arm/entry.h"
 #include "printf.h"
 #include "arm/irq.h"
+#include "heap.h"
+#include "stddef.h"
 #include "mm.h"
 #include "arm/util.h"
 
 
 static struct task_struct init_task = INIT_TASK;
 struct task_struct *current = &(init_task);
-struct task_struct *task[NR_TASKS] = {&(init_task), };
+struct task_struct **task;
 int nr_tasks = 1;
+static int max_tasks = NR_TASKS;
 
 
 void preempt_disable(void) {
@@ -32,7 +35,7 @@ void _schedule(void) {
 		next = 0;
         // Here we find the task with maximum counter (so highest prio)
         // That is also actually running
-		for (int i = 0; i < NR_TASKS; i++){
+		for (int i = 0; i < nr_tasks; i++){
 			p = task[i];
 			if (p && p->state == TASK_RUNNING && p->counter > c) {
 				c = p->counter;
@@ -44,7 +47,7 @@ void _schedule(void) {
 			break;
 		}
         // Otherwise go through all tasks and just refresh their counters 
-		for (int i = 0; i < NR_TASKS; i++) {
+		for (int i = 0; i < nr_tasks; i++) {
 			p = task[i];
 			if (p) {
 				p->counter = (p->counter >> 1) + p->priority;
@@ -53,6 +56,20 @@ void _schedule(void) {
 	}
 	switch_to(task[next]);
 	preempt_enable();
+}
+
+void sched_init() {
+    task = kmalloc(sizeof(struct task_struct * ) * NR_TASKS);
+    if (!task){ 
+        printf("Failed to init scheduler");
+        return;
+    }
+    
+    for (int i = 1; i < NR_TASKS; i++) {
+        task[i] = NULL;
+    }
+
+    task[0] = &init_task;
 }
 
 
@@ -129,6 +146,25 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     p->cpu_context.pc = (unsigned long)ret_from_fork; 
     p->cpu_context.sp = (unsigned long)childregs;
     int pid = nr_tasks++;
+
+    // Get more space if needed
+    if (pid >= max_tasks) {
+        max_tasks *= 2;
+        struct task_struct ** new_tasks = kmalloc(sizeof(struct task_struct *)* max_tasks);
+        if (!new_tasks) {
+            printf("Can't get more tasks");
+            return -1;
+        }
+        for (int i = 0; i < max_tasks/2; i++) {
+            new_tasks[i] = task[i];
+        }
+        for (int i = max_tasks/2; i < max_tasks; i++) {
+            new_tasks[i] = NULL;
+        }
+        kfree(task);
+        task = new_tasks;
+    }
+
     task[pid] = p;
     preempt_enable();
     return pid;
@@ -156,7 +192,7 @@ int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) 
 
 void exit_process(){
     preempt_disable();
-    for (int i = 0; i < NR_TASKS; i++){
+    for (int i = 0; i < nr_tasks; i++){
         if (task[i] == current) {
             task[i]->state = TASK_ZOMBIE;
             break;

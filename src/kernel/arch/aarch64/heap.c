@@ -44,7 +44,7 @@ void *kmalloc(unsigned long size) {
 
     heap_block_t* next_block_addr = (heap_block_t*)((char*) free_block_ptr + sizeof(heap_block_t) + size);
 
-    if (next_block_addr > heap_end || 
+    if (next_block_addr > (heap_block_t*)heap_end || 
         ((free_block_ptr->next_block > 0) && (next_block_addr > free_block_ptr->next_block)))
         // Does it fit within heap, and does it fit within the block, given we have next block
         return 0; // We ain't got no heap
@@ -80,5 +80,5 @@ void kfree(void *ptr) {
         block->next_block = next->next_block;
     }
     // Ensure it is free and we're done
-    block->is_used;
+    block->is_used = 0;
 }
