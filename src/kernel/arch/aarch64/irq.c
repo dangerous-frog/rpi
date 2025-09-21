@@ -35,7 +35,7 @@ static uint64_t timer_freq;
 void load_timer_interrupt() {
 	uint64_t count;
 	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
-	// /4 is 1 sec
+	// timer_freq is 1 sec
 	count += timer_freq / 8192;  // 0.0004 //TODO: see if it does it
 	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
 }

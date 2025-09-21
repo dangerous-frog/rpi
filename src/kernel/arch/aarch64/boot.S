@@ -35,12 +35,6 @@ _start:
 
     eret // exception return
 
-.macro print_hex, reg
-    mov     x0, \reg
-    mov     x1, #0x3C000000     // QEMU debug console address
-    str     x0, [x1]
-.endm
-
 el1_entry:
     // Seems el1 doesn't have fp enabled by default
     // we need to enable it or it dies on first calculation in printf lmao 
@@ -71,8 +65,6 @@ el1_entry:
     // Tell mmu where our PGD is
     adrp    x0, pg_dir
     msr     ttbr1_el1, x0
-
-    print_hex x0
 
     adrp    x0, pg_dir_identity
     msr     ttbr0_el1, x0 // for identity mapping

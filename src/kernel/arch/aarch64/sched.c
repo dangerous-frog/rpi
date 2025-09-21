@@ -13,6 +13,66 @@ struct task_struct *current = &(init_task);
 struct task_struct **task;
 int nr_tasks = 1;
 static int max_tasks = NR_TASKS;
+struct isr_wait_struct* wait_list[NR_ISR]; 
+
+void add_to_isr_list(int isr_num, long time, struct task_struct* task_ptr) {
+    struct isr_wait_struct* new = kmalloc(sizeof(struct isr_wait_struct));
+    new->ticks_to_wait = time;
+    new->task_ptr = task_ptr;
+
+    struct isr_wait_struct* isr_ptr = wait_list[isr_num];
+
+    // Check if this is first element
+    if (isr_ptr == NULL) {
+        wait_list[isr_num] = new;
+        new->next = NULL;
+        return;
+    }
+
+    // Check if we should insert before first
+    if (isr_ptr->ticks_to_wait >= time ) {
+        new->next = isr_ptr;
+        wait_list[isr_num] = new;
+        new->next->ticks_to_wait -= time;
+        return;
+    }
+
+    // Loop until end
+    while(isr_ptr->next != NULL ) {
+        if (time - isr_ptr->ticks_to_wait < 0) 
+            break;
+        time -= isr_ptr->ticks_to_wait;
+        isr_ptr = isr_ptr->next;
+    }
+    
+    // Now we have place within queue and time left
+    if (isr_ptr->next == NULL) {
+        // We are last, we can just add remaining time
+        isr_ptr->next = new;
+        new->next = NULL;
+    } else {
+        // This means there is another element, and it was bigger than our current time
+        new->next = isr_ptr->next;
+        isr_ptr->next = new;
+        new->next->ticks_to_wait -= time; // Subtract time from next to node so overall time stays same.    
+    }
+}
+
+// Let the scheduler know the interrupt has fired so it can 
+// update internal structures and wake tasks as needed
+void handle_isr_wake_up(int isr_num) {
+    struct isr_wait_struct* isr_ptr = wait_list[isr_num];
+
+    if ( isr_ptr != NULL && isr_ptr->ticks_to_wait > 0) 
+        isr_ptr->ticks_to_wait -= 1;
+
+    while(isr_ptr != NULL && isr_ptr->ticks_to_wait == 0) {
+        isr_ptr->task_ptr->state = TASK_RUNNING;
+        wait_list[isr_num] = isr_ptr->next;
+        kfree(isr_ptr);
+        isr_ptr = wait_list[isr_num];
+    }
+}
 
 
 void preempt_disable(void) {
@@ -21,6 +81,15 @@ void preempt_disable(void) {
 
 void preempt_enable(void) {
     current->preempt_count--;
+}
+
+void delay_ticks(long ticks) {
+    if (ticks == 0) 
+        return;
+    // Hardcoded number for timer interrupt, stupid but this OS won't grow bigger 
+    add_to_isr_list(30, ticks, current);
+    current->state = TASK_WAITING;
+    schedule();
 }
 
 
@@ -58,7 +127,11 @@ void _schedule(void) {
 	preempt_enable();
 }
 
+
+
+
 void sched_init() {
+    // Initialize list of tasks, so it's nicely on heap
     task = kmalloc(sizeof(struct task_struct * ) * NR_TASKS);
     if (!task){ 
         printf("Failed to init scheduler");
@@ -70,6 +143,16 @@ void sched_init() {
     }
 
     task[0] = &init_task;
+
+    // Initialize first pointers for isr waiting
+    for (int i = 0; i < NR_ISR; i++) {
+        wait_list[i] = kmalloc(sizeof(struct isr_wait_struct));
+    }
+}
+
+void set_task_prio(int prio) {
+    current->priority = prio;
+    current->counter = prio;
 }
 
 
@@ -96,6 +179,7 @@ void schedule_tail(void) {
 void timer_tick() {
     // Decrement counter
     --current->counter;
+    handle_isr_wake_up(30);
     // If it's not time yet or we can't preempt, then ain't a thing we can do
     if (current->counter > 0 || current->preempt_count > 0) {
         return;

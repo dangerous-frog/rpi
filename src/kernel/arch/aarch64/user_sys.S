@@ -3,6 +3,8 @@
 .set SYS_WRITE_NUMBER, 0 		// syscal numbers 
 .set SYS_FORK_NUMBER, 1 	
 .set SYS_EXIT_NUMBER, 2 	
+.set SYS_DELAY_TICKS_NUMBER, 3
+.set SYS_SET_PRIO_NUMBER, 4
 
 .globl user_delay
 user_delay:
@@ -25,5 +27,17 @@ call_sys_exit:
 .globl call_sys_fork
 call_sys_fork:
 	mov w8, #SYS_FORK_NUMBER	
+	svc #0
+	ret
+
+.globl call_sys_delay_ticks
+call_sys_delay_ticks:
+	mov	w8, #SYS_DELAY_TICKS_NUMBER
+	svc #0
+	ret
+
+.global call_sys_set_prio
+call_sys_set_prio:
+	mov w8, #SYS_SET_PRIO_NUMBER
 	svc #0
 	ret

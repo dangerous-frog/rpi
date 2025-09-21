@@ -16,6 +16,14 @@ void sys_exit(){
 	exit_process();
 }
 
-void * const sys_call_table[] = {sys_write, sys_fork, sys_exit};
+void sys_delay_ticks(long ticks){
+	delay_ticks(ticks);
+}
+
+void sys_set_prio(int prio){
+	set_task_prio(prio);
+}
+
+void * const sys_call_table[] = {sys_write, sys_fork, sys_exit, sys_delay_ticks, sys_set_prio};
 
 

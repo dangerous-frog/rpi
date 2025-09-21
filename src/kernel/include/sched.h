@@ -33,10 +33,11 @@ struct pt_regs {
 #define THREAD_SIZE 4096
 
 #define NR_TASKS    16
-
+#define NR_ISR		35
 enum TASK_STATE {
     TASK_RUNNING,
-	TASK_ZOMBIE
+	TASK_ZOMBIE,
+	TASK_WAITING
 };
 
 extern struct task_struct *current;
@@ -87,6 +88,12 @@ struct task_struct {
 	struct mm_struct mm;
 };
 
+struct isr_wait_struct {
+	unsigned int ticks_to_wait;
+	struct task_struct* task_ptr;
+	struct isr_wait_struct* next;
+};
+
 
 extern void sched_init(void);
 extern void schedule(void);
@@ -99,6 +106,10 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
 int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc);
 struct pt_regs * task_pt_regs(struct task_struct *tsk);
 void exit_process();
+void set_task_prio(int prio);
+
+void delay_ticks(long ticks);
+void handle_isr_wake_up(int isr_num);
 
 #define INIT_TASK { \
     /* cpu_context */ { 0,0,0,0,0,0,0,0,0,0,0,0,0 }, \

@@ -67,13 +67,14 @@ void kernel_main()
 {
     uart_init();
     fb_init();
+    irq_vector_init();
+
 
     init_printf(0, uart_writeChar);    
     heap_init();
     sched_init();
 
     // Set up timer interrupt
-    irq_vector_init();
     enable_irq();
     enable_interrupt(30);
     drawString(100,100,"Hello world!",0x0f);

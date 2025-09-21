@@ -1,7 +1,7 @@
 #ifndef SYS_H
 #define SYS_H
 
-#define __NR_syscalls 4
+#define __NR_syscalls 8
 
 #define SYS_WRITE_NUMBER 0
 #define SYS_MALLOC_NUMBER 1
