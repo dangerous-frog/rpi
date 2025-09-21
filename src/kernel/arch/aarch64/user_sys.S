@@ -1,10 +1,15 @@
 .section ".text.user"
 
-.set SYS_WRITE_NUMBER, 0 		// syscal numbers 
-.set SYS_FORK_NUMBER, 1 	
-.set SYS_EXIT_NUMBER, 2 	
-.set SYS_DELAY_TICKS_NUMBER, 3
-.set SYS_SET_PRIO_NUMBER, 4
+
+
+.macro SYSCALL_WRAPPER name, syscall_num
+.globl call_sys_\name
+call_sys_\name:
+    mov w8, #\syscall_num
+    svc #0
+    ret
+.endm
+
 
 .globl user_delay
 user_delay:
@@ -12,32 +17,9 @@ user_delay:
 	bne user_delay
 	ret
 
-.globl call_sys_write
-call_sys_write:
-	mov w8, #SYS_WRITE_NUMBER	
-	svc #0
-	ret
 
-.globl call_sys_exit
-call_sys_exit:
-	mov w8, #SYS_EXIT_NUMBER	
-	svc #0
-	ret
-
-.globl call_sys_fork
-call_sys_fork:
-	mov w8, #SYS_FORK_NUMBER	
-	svc #0
-	ret
-
-.globl call_sys_delay_ticks
-call_sys_delay_ticks:
-	mov	w8, #SYS_DELAY_TICKS_NUMBER
-	svc #0
-	ret
-
-.global call_sys_set_prio
-call_sys_set_prio:
-	mov w8, #SYS_SET_PRIO_NUMBER
-	svc #0
-	ret
+SYSCALL_WRAPPER write, 0
+SYSCALL_WRAPPER fork, 1
+SYSCALL_WRAPPER exit, 2
+SYSCALL_WRAPPER delay_ticks, 3
+SYSCALL_WRAPPER set_prio, 4

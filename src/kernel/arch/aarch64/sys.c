@@ -1,11 +1,17 @@
 #include "printf.h"
 #include "sched.h"
 #include "mm.h"
+#include "printf.h"
+#include "drivers/io.h"
 
 
 
-void sys_write(char * buf){
-	printf(buf);
+void sys_write(char * fmt, ...){
+	// Yeah, bit goofy, but works and this is LEARNING OS
+	va_list va;
+	va_start(va, fmt);
+	tfp_format(0, uart_writeChar, fmt, va);
+	va_end(va);
 }
 
 int sys_fork(){

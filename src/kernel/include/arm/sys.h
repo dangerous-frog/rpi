@@ -13,13 +13,15 @@
 #define ESR_ELx_EC_DABT_LOW		0x24
 
 #ifndef __ASSEMBLER__
+#include <stdarg.h>
 
 
 
 void sys_write(char * buf);
 int sys_fork();
 
-void call_sys_write(char * buf);
+void call_sys_write(char * fmt, ...);
+void call_sys_write_char(void *p, char character);
 int call_sys_clone(unsigned long fn, unsigned long arg, unsigned long stack);
 unsigned long call_sys_malloc();
 void call_sys_exit();
