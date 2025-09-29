@@ -1,6 +1,7 @@
 #include "printf.h"
 #include "arm/entry.h"
 #include "arm/irq.h"
+#include "drivers/io.h"
 #include "arm/util.h"
 #include "sched.h"
 #include "stddef.h"
@@ -113,20 +114,40 @@ void show_invalid_entry_message(int type, unsigned long esr, unsigned long addre
 void handle_irq(void) {
     uint32_t irq_id = mmio_read(GICC_IAR) & 0x3FF;
     
-    if (irq_id == 30) {
-        // printf("elo");
-        // Set next timer interrupt (2 seconds from now)
-		// Because timer_tick will likely switch context, it's very important that we first process/restart the interrupt
-		load_timer_interrupt();
-        mmio_write(GICC_EOIR, irq_id);
+	if ( irq_id < NR_ISR) {
+		// Let scheduling know
+		handle_isr_wake_up(irq_id);
+	}
+	
 
-		timer_tick();
-		
-        
-    } else if (irq_id == 1023) {
-        printf("Spurious interrupt\n");
-    } else {
-        printf("Unexpected interrupt: %d\n", irq_id);
-        mmio_write(GICC_EOIR, irq_id);
-    }
+	switch (irq_id) {
+		case 30:
+			// Set next timer interrupt
+			// Because timer_tick will likely switch context, it's very important that we first process/restart the interrupt
+			load_timer_interrupt();
+			mmio_write(GICC_EOIR, irq_id);
+			timer_tick();
+			break;
+			
+		case 125:
+			// Uart read isr
+			// first check if it is uart read isr, as it's OR'ed isr
+			uint32_t aux_irq = mmio_read(AUX_IRQ) & 0x01;
+			if (!aux_irq) {
+				printf("Unknown AUX IRQ");
+				break;
+			}
+			mmio_write(GICC_EOIR, irq_id);
+			uart_readChar();
+			schedule();
+			break;
+		case 1023:
+			printf("Spurious interrupt\n");
+			break;
+			
+		default:
+			printf("Unexpected interrupt: %d\n", irq_id);
+			mmio_write(GICC_EOIR, irq_id);
+			break;
+	}
 }

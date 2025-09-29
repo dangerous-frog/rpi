@@ -22,7 +22,9 @@ int sys_fork();
 
 void call_sys_write(char * fmt, ...);
 void call_sys_write_char(void *p, char character);
+char call_sys_uart_read_char(char * buf);
 int call_sys_clone(unsigned long fn, unsigned long arg, unsigned long stack);
+void call_register_for_isr(int isr_num);
 unsigned long call_sys_malloc();
 void call_sys_exit();
 

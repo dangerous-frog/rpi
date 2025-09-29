@@ -23,3 +23,5 @@ SYSCALL_WRAPPER fork, 1
 SYSCALL_WRAPPER exit, 2
 SYSCALL_WRAPPER delay_ticks, 3
 SYSCALL_WRAPPER set_prio, 4
+SYSCALL_WRAPPER uart_read_char, 5
+SYSCALL_WRAPPER register_for_isr, 6

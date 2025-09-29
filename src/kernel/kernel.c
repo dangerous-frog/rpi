@@ -65,18 +65,24 @@ void kernel_process(){
 
 void kernel_main()
 {
+
+    init_printf(0, uart_writeChar);    
+
+    uart_debug_fifo_status();
+
     uart_init();
     fb_init();
     irq_vector_init();
 
+    uart_debug_fifo_status();
 
-    init_printf(0, uart_writeChar);    
     heap_init();
     sched_init();
 
     // Set up timer interrupt
     enable_irq();
     enable_interrupt(30);
+    enable_interrupt(125);
     drawString(100,100,"Hello world!",0x0f);
     
 
@@ -91,16 +97,4 @@ void kernel_main()
 		schedule();
 	}	
 
-
-    // while (1) {
-    //     // Here we will do uart reading and writing lol
-    //     // Too poor for interrupts just now
-
-    //     char read = uart_readChar();
-    //     if (read != '\0') {
-    //         printf("%c", read);
-    //     } 
-
-
-    // }
 }

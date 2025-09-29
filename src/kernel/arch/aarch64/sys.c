@@ -26,10 +26,19 @@ void sys_delay_ticks(long ticks){
 	delay_ticks(ticks);
 }
 
+char sys_uart_read_char(char * buf) {
+	return uart_read_from_fifo(buf);
+}
+
 void sys_set_prio(int prio){
 	set_task_prio(prio);
 }
 
-void * const sys_call_table[] = {sys_write, sys_fork, sys_exit, sys_delay_ticks, sys_set_prio};
+
+void sys_register_for_isr(int isr_num) {
+	register_for_isr(isr_num);
+}
+
+void * const sys_call_table[] = {sys_write, sys_fork, sys_exit, sys_delay_ticks, sys_set_prio, sys_uart_read_char, sys_register_for_isr};
 
 

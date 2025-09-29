@@ -29,6 +29,19 @@ void loop_constant(char* str)
 	}
 }
 
+void read_from_uart() {
+	while (1) {
+		char read[12]; 
+		while (read != '\0') {
+			int len = call_sys_uart_read_char(read);
+			for (int i = 0; i < len; i++) {
+				call_sys_write("%c", read[i]);
+			}
+		}
+		
+	}
+}
+
 void user_process() 
 {
 	call_sys_write("User process\n\r");
@@ -39,7 +52,7 @@ void user_process()
 		return;
 	}
 	if (pid == 0){
-		loop_constant("a");
+		read_from_uart();
 	} else {
 		loop("ISR Fired\n\n");
 	}

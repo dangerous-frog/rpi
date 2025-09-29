@@ -1,6 +1,7 @@
 // GPIO
 #include "arm/util.h"
 #include "drivers/io.h"
+#include "printf.h"
 
     // Why this peripheral base, you might ask?
     // in manual register base is 0x7e20_0000, which is legacy address, but wait a minute, mister
@@ -25,6 +26,8 @@ enum {
     Pull_None = 0,
 };
 
+static char buffer[RX_FIFO_LEN];
+static int buf_len = 0; 
 
 
 unsigned int gpio_call(unsigned int pin_number, unsigned int value, unsigned long base, unsigned int field_size, unsigned int field_max) {
@@ -57,24 +60,19 @@ void gpio_useAsAlt5(unsigned int pin_number) {
 
 // UART
 
-enum {
-    AUX_BASE        = PERIPHERAL_BASE + 0x215000,
-    AUX_ENABLES     = AUX_BASE + 4,
-    AUX_MU_IO_REG   = AUX_BASE + 64,
-    AUX_MU_IER_REG  = AUX_BASE + 68,
-    AUX_MU_IIR_REG  = AUX_BASE + 72,
-    AUX_MU_LCR_REG  = AUX_BASE + 76,
-    AUX_MU_MCR_REG  = AUX_BASE + 80,
-    AUX_MU_LSR_REG  = AUX_BASE + 84,
-    // LSR shows data status, 5th bit is whether fifo can accept at least one char
-    // 0th bit is set to 1 if at least 1 symbol in
-    AUX_MU_CNTL_REG = AUX_BASE + 96,
-    AUX_MU_BAUD_REG = AUX_BASE + 104,
-    AUX_UART_CLOCK  = 500000000, // cpu freq
-    UART_MAX_QUEUE  = 16 * 1024
-};
-
-#define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK/(baud*8))-1)
+void uart_debug_fifo_status(void) {
+    int stat = mmio_read(AUX_MU_STAT_REG);
+    int rx_fifo_level = (stat >> 16) & 0x0F;  // Bits 19:16
+    int tx_fifo_level = (stat >> 24) & 0x0F;  // Bits 27:24
+    int iir = mmio_read(AUX_MU_IIR_REG);
+    int aux_irq = mmio_read(AUX_IRQ) & 0x01;
+    
+    printf("STAT_REG: 0x%08x\n", stat);
+    printf("RX FIFO level: %d\n", rx_fifo_level);
+    printf("TX FIFO level: %d\n", tx_fifo_level);
+    printf("IIR pending bit: %d\n", iir & 1);
+    printf("AUX IRQ: %d\n", aux_irq);
+}
 
 void uart_init() {
     mmio_write(AUX_ENABLES, 1); //enable UART1
@@ -82,12 +80,16 @@ void uart_init() {
     mmio_write(AUX_MU_CNTL_REG, 0); // clear cntl register, set it later
     mmio_write(AUX_MU_LCR_REG, 3); //8 bits
     mmio_write(AUX_MU_MCR_REG, 0);  // sets rts to high?
-    mmio_write(AUX_MU_IER_REG, 0); //disable tx interrupt
-    mmio_write(AUX_MU_IIR_REG, 0xC6); // clear & enable FIFO
+    mmio_write(AUX_MU_IIR_REG, 0x05); // clear & enable FIFO
     mmio_write(AUX_MU_BAUD_REG, AUX_MU_BAUD(115200));
     gpio_useAsAlt5(14);
     gpio_useAsAlt5(15);
+    mmio_write(AUX_MU_IER_REG, 1); //RX isr ON, TX isr OFF
+    // Their docs are wrong, it seems bit 0 switches RX isr, instead of bit 1 as they say
     mmio_write(AUX_MU_CNTL_REG, 3); //enable RX/TX
+    
+
+
 }
 
 unsigned int uart_isWriteByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x20; }
@@ -110,11 +112,23 @@ void uart_writeChar(void* p, char character) {
     uart_writeByteBlockingActual(character);
 }
 
-char uart_readChar() {
+void uart_readChar() {
     if ( uart_isReadByteReady()) {
-        return (char) mmio_read(AUX_MU_IO_REG); // upper bits, should be clear 
+        buffer[buf_len++] = (char) mmio_read(AUX_MU_IO_REG); // upper bits, should be clear 
     } else {
-        return '\0';  // Return null character
+        return; // Do nothing
     }
+}
+
+int uart_read_from_fifo(char* buf) {
+    // Remember buf has to be atleast RX_BUF_LEN size
+    disable_irq();
+    for(int i = 0; i < buf_len; i++) {
+        buf[i] = buffer[i];
+    }
+    int ret = buf_len;
+    buf_len = 0;
+    enable_irq();
+    return ret;
 }
 

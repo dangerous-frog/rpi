@@ -33,7 +33,7 @@ struct pt_regs {
 #define THREAD_SIZE 4096
 
 #define NR_TASKS    16
-#define NR_ISR		35
+#define NR_ISR		126
 enum TASK_STATE {
     TASK_RUNNING,
 	TASK_ZOMBIE,
@@ -110,6 +110,7 @@ void set_task_prio(int prio);
 
 void delay_ticks(long ticks);
 void handle_isr_wake_up(int isr_num);
+void register_for_isr(int isr_num);
 
 #define INIT_TASK { \
     /* cpu_context */ { 0,0,0,0,0,0,0,0,0,0,0,0,0 }, \

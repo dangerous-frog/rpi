@@ -15,6 +15,8 @@ int nr_tasks = 1;
 static int max_tasks = NR_TASKS;
 struct isr_wait_struct* wait_list[NR_ISR]; 
 
+
+
 void add_to_isr_list(int isr_num, long time, struct task_struct* task_ptr) {
     struct isr_wait_struct* new = kmalloc(sizeof(struct isr_wait_struct));
     new->ticks_to_wait = time;
@@ -56,6 +58,12 @@ void add_to_isr_list(int isr_num, long time, struct task_struct* task_ptr) {
         isr_ptr->next = new;
         new->next->ticks_to_wait -= time; // Subtract time from next to node so overall time stays same.    
     }
+}
+
+void register_for_isr(int isr_num) {
+    preempt_disable();
+    add_to_isr_list(isr_num, 0, current);
+    preempt_enable();
 }
 
 // Let the scheduler know the interrupt has fired so it can 
@@ -179,7 +187,6 @@ void schedule_tail(void) {
 void timer_tick() {
     // Decrement counter
     --current->counter;
-    handle_isr_wake_up(30);
     // If it's not time yet or we can't preempt, then ain't a thing we can do
     if (current->counter > 0 || current->preempt_count > 0) {
         return;
