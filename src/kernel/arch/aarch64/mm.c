@@ -131,10 +131,10 @@ int do_mem_abort(unsigned long addr, unsigned long esr) {
             return -1;
         }
         map_page(current, addr & PAGE_MASK, page);
-        ind++;
-        if (ind > 2){
-            return -1;
-        }
+        // ind++;
+        // if (ind > 2){
+            // return -1;
+        // }
         return 0;
     }
     return -1;

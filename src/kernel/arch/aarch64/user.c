@@ -1,5 +1,6 @@
 #include "user_sys.h"
 #include "printf.h"
+#include "term.h"
 
 
 
@@ -7,11 +8,16 @@
 
 void loop(char* str)
 {
+    term_init(call_sys_clear_screen,call_sys_write_screen_buffer);
+	term_printf("siema mordo");
+	refresh_screen();
 	char buf[2] = {""};
 	call_sys_set_prio(100);
 	int counter = 0;
 	while (1){
-		call_sys_write("\nISR Fired %d\n", counter);
+		clear_screen();
+		term_printf("\nISR Fired %d\n", counter);
+		refresh_screen();
 		counter++;
 		call_sys_delay_ticks(8192);
 	}

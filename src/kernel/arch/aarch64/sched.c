@@ -267,18 +267,54 @@ struct pt_regs * task_pt_regs(struct task_struct *tsk){ // To my understanding
 	return (struct pt_regs *)p;
 }
 
-int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) {
+int move_to_user_mode(unsigned long start, unsigned long size, unsigned long pc) {
     struct pt_regs *regs = task_pt_regs(current);
-	regs->pstate = PSR_MODE_EL0t;
-	regs->pc = pc;
-	regs->sp = 2 *  PAGE_SIZE;  // For now, no more than 1 page text and 1 page stack
-	unsigned long code_page = allocate_user_page(current, 0);
-	if (code_page == 0)	{
-		return -1;
-	}
-	memcpy(code_page, start, size); // Copies to virt memory we allocated
-	set_pgd(current->mm.pgd); // activates translation tables for this process
-	return 0;
+    regs->pstate = PSR_MODE_EL0t;
+    
+    extern char user_begin, user_end;
+    unsigned long user_start = (unsigned long)&user_begin;
+    unsigned long user_end_addr = (unsigned long)&user_end;
+    unsigned long user_size = user_end_addr - user_start;
+    unsigned long num_pages = (user_size + PAGE_SIZE - 1) / PAGE_SIZE;
+    
+    // Map all user pages to LOW virtual addresses
+    for (unsigned long i = 0; i < num_pages; i++) {
+        unsigned long virt_addr = i * PAGE_SIZE;
+        unsigned long phys_page = allocate_user_page(current, virt_addr);
+        
+        if (phys_page == 0) {
+            printf("Failed to allocate page %d\n", i);
+            return -1;
+        }
+        
+        unsigned long copy_start = start + (i * PAGE_SIZE);
+        unsigned long copy_size = PAGE_SIZE;
+        
+        if (i * PAGE_SIZE >= size) {
+            copy_size = 0;
+        } else if ((i + 1) * PAGE_SIZE > size) {
+            copy_size = size - (i * PAGE_SIZE);
+        }
+        
+        if (copy_size > 0) {
+            memcpy(phys_page, copy_start, copy_size);
+        }
+    }
+
+    // Allocate stack page
+    unsigned long stack_vaddr = num_pages * PAGE_SIZE;
+    unsigned long stack_page = allocate_user_page(current, stack_vaddr);
+    if (stack_page == 0) {
+        printf("Failed to allocate stack\n");
+        return -1;
+    }
+    
+    // PC is ALREADY an offset, don't subtract again!
+    regs->pc = pc;  // Already 0x114
+    regs->sp = stack_vaddr + PAGE_SIZE;
+    
+    set_pgd(current->mm.pgd);
+    return 0;
 }
 
 void exit_process(){
@@ -296,3 +332,33 @@ void exit_process(){
     schedule();
 }
 
+// int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) {
+//     struct pt_regs *regs = task_pt_regs(current);
+// 	regs->pstate = PSR_MODE_EL0t;
+// 	regs->pc = pc;
+
+
+// 	// Calculate how many pages we need
+//     unsigned long num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+//     regs->sp = num_pages * PAGE_SIZE;  // Stack after code pages
+    
+//     // Allocate all needed pages
+//     for (unsigned long i = 0; i < num_pages; i++) {
+//         unsigned long va = i * PAGE_SIZE;
+//         unsigned long code_page = allocate_user_page(current, va);
+//         if (code_page == 0) {
+//             return -1;
+//         }
+        
+//         // Copy this page's worth of data
+//         unsigned long copy_size = PAGE_SIZE;
+//         if (i == num_pages - 1) {
+//             // Last page might be partial
+//             copy_size = size - (i * PAGE_SIZE);
+//         }
+//         memcpy(code_page, start + (i * PAGE_SIZE), copy_size);
+//     }
+    
+// 	set_pgd(current->mm.pgd); // activates translation tables for this process
+// 	return 0;
+// }

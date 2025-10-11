@@ -3,6 +3,7 @@
 #include "mm.h"
 #include "printf.h"
 #include "drivers/io.h"
+#include "drivers/fb.h"
 
 
 
@@ -39,6 +40,22 @@ void sys_register_for_isr(int isr_num) {
 	register_for_isr(isr_num);
 }
 
-void * const sys_call_table[] = {sys_write, sys_fork, sys_exit, sys_delay_ticks, sys_set_prio, sys_uart_read_char, sys_register_for_isr};
+void sys_write_screen_buffer(char *buf, int size_x, int size_y) {
+    
+    for (int x = 0; x < size_x; x++) {
+        for (int y = 0; y < size_y; y++) {
+            char c = buf[x * size_y + y];    
+            drawChar(c, x * 8, y * 8, 0x0f);
+        }
+    }
+}
+
+void sys_clear_screen() {
+	drawRect(0, 0, 1920, 1080, 0, 1);
+}
+
+
+void * const sys_call_table[] = {	sys_write, sys_fork, sys_exit, sys_delay_ticks, 
+									sys_set_prio, sys_uart_read_char, sys_register_for_isr, sys_write_screen_buffer, sys_clear_screen};
 
 

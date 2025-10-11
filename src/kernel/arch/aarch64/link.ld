@@ -4,11 +4,20 @@ SECTIONS
 	.text.boot : { *(.text.boot) }
 	. = ALIGN(0x00001000);
 	user_begin = .;
-	.text.user : { build/user* (.text) }
-	.rodata.user : { build/user* (.rodata) }
-	.data.user : { build/user* (.data) }
-	.bss.user : { build/user* (.bss) }
-	user_end = .;
+		/* .text.user : { build/user* (.text) } */
+	/* .rodata.user : { build/user* (.rodata) } */
+	/* .data.user : { build/user* (.data) } */
+	/* .bss.user : { build/user* (.bss) } */
+
+.text.user : { build/user* (.text) build/term* (.text) build/printf* (.text)}
+.rodata.user : { build/user* (.rodata) build/term* (.rodata) build/printf* (.rodata)}
+.data.user : { build/user* (.data) build/term* (.data) build/printf* (.data)}
+. = ALIGN(0x00001000);
+.bss.user : { build/user* (.bss) build/term* (.bss) build/printf* (.bss)}
+. = ALIGN(0x00001000);
+user_end = .;
+
+. = ALIGN(0x00001000);
 	.text :  { *(.text) }
 	.rodata : { *(.rodata) }
 	.data : { *(.data) }

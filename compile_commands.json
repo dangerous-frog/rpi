@@ -1,0 +1,21 @@
+[
+  {
+    "arguments": [
+      "/home/luki/Projekty/rpi/arm-gnu-toolchain/bin/aarch64-none-elf-gcc",
+      "-Wall",
+      "-Og",
+      "-g",
+      "-ffreestanding",
+      "-Isrc/kernel/include",
+      "-Isrc/libc/include",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "../../build/term.o",
+      "stdio/term.c"
+    ],
+    "directory": "/home/luki/Projekty/rpi/src/libc",
+    "file": "/home/luki/Projekty/rpi/src/libc/stdio/term.c",
+    "output": "/home/luki/Projekty/rpi/build/term.o"
+  }
+]
