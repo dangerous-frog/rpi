@@ -56,7 +56,16 @@
 
 	.if \el == 0
 	msr sp_el0, x21
+
+    //mov     w0, w22      
+    //bl      print_num
+
+	//ldr     x0, =0xffff0000000811f8
+	//ldr     w0, [x0]
+    //bl      print_num
 	.endif
+
+
 
 	msr 	elr_el1, x22
 	msr 	spsr_el1, x23
@@ -78,6 +87,7 @@
 	ldp	    x28, x29, [sp, #16 * 14]
 	ldr	    x30, [sp, #16 * 15]
     add     sp, sp, #S_FRAME_SIZE
+	// isb
     eret 
 	.endm
 
@@ -108,43 +118,43 @@ vectors:
 	ventry	error_invalid_el0_32		// Error 32-bit EL0
 
 sync_invalid_el1t:
-	handle_invalid_entry 1, SYNC_INVALID_EL1t
+	handle_invalid_entry 0, SYNC_INVALID_EL1t
 
 irq_invalid_el1t:
 	handle_invalid_entry 1, IRQ_INVALID_EL1t
 
 fiq_invalid_el1t:
-	handle_invalid_entry 1, FIQ_INVALID_EL1t
+	handle_invalid_entry 2, FIQ_INVALID_EL1t
 
 error_invalid_el1t:
-	handle_invalid_entry 1, ERROR_INVALID_EL1t
+	handle_invalid_entry 3, ERROR_INVALID_EL1t
 
 sync_invalid_el1h:
-	handle_invalid_entry 1, SYNC_INVALID_EL1h
+	handle_invalid_entry 4, SYNC_INVALID_EL1h
 
 fiq_invalid_el1h:
-	handle_invalid_entry 1, FIQ_INVALID_EL1h
+	handle_invalid_entry 6, FIQ_INVALID_EL1h
 
 error_invalid_el1h:
-	handle_invalid_entry 1, ERROR_INVALID_EL1h
+	handle_invalid_entry 7, ERROR_INVALID_EL1h
 
 fiq_invalid_el0_64:
-	handle_invalid_entry 0, FIQ_INVALID_EL0_64
+	handle_invalid_entry 9, FIQ_INVALID_EL0_64
 
 error_invalid_el0_64:
-	handle_invalid_entry 0, ERROR_INVALID_EL0_64
+	handle_invalid_entry 11, ERROR_INVALID_EL0_64
 
 sync_invalid_el0_32:
-	handle_invalid_entry 0, SYNC_INVALID_EL0_32
+	handle_invalid_entry 12, SYNC_INVALID_EL0_32
 
 irq_invalid_el0_32:
-	handle_invalid_entry 0, IRQ_INVALID_EL0_32
+	handle_invalid_entry 13, IRQ_INVALID_EL0_32
 
 fiq_invalid_el0_32:
-	handle_invalid_entry 0, FIQ_INVALID_EL0_32
+	handle_invalid_entry 14, FIQ_INVALID_EL0_32
 
 error_invalid_el0_32:
-	handle_invalid_entry 0, ERROR_INVALID_EL0_32
+	handle_invalid_entry 15, ERROR_INVALID_EL0_32
 
 el0_sync:
 	kernel_entry 0

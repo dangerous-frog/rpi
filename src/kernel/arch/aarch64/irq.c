@@ -37,7 +37,7 @@ void load_timer_interrupt() {
 	uint64_t count;
 	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
 	// timer_freq is 1 sec
-	count += timer_freq / 8192;  // 0.0004 //TODO: see if it does it
+	count += timer_freq / 2048;  // 0.0004 //TODO: see if it does it
 	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
 }
 // TODO: this should include core, for now only 0
@@ -108,14 +108,15 @@ void enable_interrupt(int irq_num)
 
 void show_invalid_entry_message(int type, unsigned long esr, unsigned long address)
 {
-	printf("%s, ESR: %x, address: %x\r\n", entry_error_messages[type], esr, address);
+	printf("Type: %d, %s, ESR: %x, address: %x\r\n",type, entry_error_messages[type], esr, address);
 }
 
 void handle_irq(void) {
     uint32_t irq_id = mmio_read(GICC_IAR) & 0x3FF;
-    
+    // printf("\nIRQ %d\n", irq_id);
 	if ( irq_id < NR_ISR) {
 		// Let scheduling know
+
 		handle_isr_wake_up(irq_id);
 	}
 	
@@ -139,7 +140,6 @@ void handle_irq(void) {
 			}
 			mmio_write(GICC_EOIR, irq_id);
 			uart_readChar();
-			schedule();
 			break;
 		case 1023:
 			printf("Spurious interrupt\n");
@@ -150,4 +150,5 @@ void handle_irq(void) {
 			mmio_write(GICC_EOIR, irq_id);
 			break;
 	}
+	// printf("\nexiting handler\n");
 }

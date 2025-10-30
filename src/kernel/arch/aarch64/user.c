@@ -3,7 +3,17 @@
 #include "term.h"
 
 
-
+static inline int read_mem() {
+    int value;
+    __asm__ volatile (
+        "mov x9, #0x68\n\t"
+        "ldr %w0, [x9]"
+        : "=r" (value)
+        :
+        : "x9", "memory"
+    );
+    return value;
+}
 
 
 void loop(char* str)
@@ -19,7 +29,7 @@ void loop(char* str)
 		term_printf("\nISR Fired %d\n", counter);
 		refresh_screen();
 		counter++;
-		call_sys_delay_ticks(8192);
+		call_sys_delay_ticks(1024);
 	}
 }
 
@@ -51,6 +61,11 @@ void read_from_uart() {
 void user_process() 
 {
 	call_sys_write("User process\n\r");
+	int var = read_mem();
+	if (var != 0xb9005be0) {
+		call_sys_write("complain\n");
+	}
+	// call_sys_write("User %d\n");
 	int pid = call_sys_fork();
 	if (pid < 0) {
 		call_sys_write("Error during fork\n\r");

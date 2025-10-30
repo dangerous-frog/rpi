@@ -1,6 +1,7 @@
 #ifndef	_USER_SYS_H
 #define	_USER_SYS_H
 #include <stdarg.h>
+#include "user_printf.h"
 
 
 
@@ -8,7 +9,19 @@
 // Usage:
 
 
+
 void call_sys_write(char * fmt, ...);
+void call_sys_write_str(char * buffer);
+
+void call_sys_write(char * fmt, ...) {
+    char buf[256];
+    
+    va_list va;
+    va_start(va, fmt);
+    tfp_sprintf_u(buf, fmt, va);  // Format into buffer
+    va_end(va);
+    call_sys_write_str(buf);  // Syscall with formatted string
+}
 int call_sys_fork();
 char call_sys_uart_read_char();
 void call_sys_exit();

@@ -84,7 +84,7 @@ void uart_init() {
     mmio_write(AUX_MU_BAUD_REG, AUX_MU_BAUD(115200));
     gpio_useAsAlt5(14);
     gpio_useAsAlt5(15);
-    mmio_write(AUX_MU_IER_REG, 1); //RX isr ON, TX isr OFF
+    // mmio_write(AUX_MU_IER_REG, 1); //RX isr ON, TX isr OFF
     // Their docs are wrong, it seems bit 0 switches RX isr, instead of bit 1 as they say
     mmio_write(AUX_MU_CNTL_REG, 3); //enable RX/TX
     
@@ -113,8 +113,11 @@ void uart_writeChar(void* p, char character) {
 }
 
 void uart_readChar() {
-    if ( uart_isReadByteReady()) {
+    if ( uart_isReadByteReady() && buf_len < RX_FIFO_LEN - 1) {
         buffer[buf_len++] = (char) mmio_read(AUX_MU_IO_REG); // upper bits, should be clear 
+    } else if (uart_isReadByteReady()) {
+        // If buffer is full just read it atleast
+        mmio_read(AUX_MU_IO_REG);
     } else {
         return; // Do nothing
     }

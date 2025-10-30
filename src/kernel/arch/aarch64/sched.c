@@ -75,7 +75,9 @@ void handle_isr_wake_up(int isr_num) {
         isr_ptr->ticks_to_wait -= 1;
 
     while(isr_ptr != NULL && isr_ptr->ticks_to_wait == 0) {
+        printf("%x\n", *((int*) 0xffff000000081068));
         isr_ptr->task_ptr->state = TASK_RUNNING;
+        printf("Woken task %x\n", isr_ptr->task_ptr);
         wait_list[isr_num] = isr_ptr->next;
         kfree(isr_ptr);
         isr_ptr = wait_list[isr_num];
@@ -96,6 +98,7 @@ void delay_ticks(long ticks) {
         return;
     // Hardcoded number for timer interrupt, stupid but this OS won't grow bigger 
     add_to_isr_list(30, ticks, current);
+    printf("Stalled task %x\n", current);
     current->state = TASK_WAITING;
     schedule();
 }
@@ -154,7 +157,7 @@ void sched_init() {
 
     // Initialize first pointers for isr waiting
     for (int i = 0; i < NR_ISR; i++) {
-        wait_list[i] = kmalloc(sizeof(struct isr_wait_struct));
+        wait_list[i] = NULL;
     }
 }
 
@@ -257,6 +260,7 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     }
 
     task[pid] = p;
+    printf("New task at: %x\n", task[pid]);
     preempt_enable();
     return pid;
 }
@@ -311,9 +315,11 @@ int move_to_user_mode(unsigned long start, unsigned long size, unsigned long pc)
     
     // PC is ALREADY an offset, don't subtract again!
     regs->pc = pc;  // Already 0x114
+    printf("My pc is 0x%x\n", pc);
+    printf("Instr: %x\n", *((int*) 0xffff0000000811f8));
     regs->sp = stack_vaddr + PAGE_SIZE;
-    
-    set_pgd(current->mm.pgd);
+
+set_pgd(current->mm.pgd);
     return 0;
 }
 

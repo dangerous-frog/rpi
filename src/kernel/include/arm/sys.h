@@ -14,8 +14,11 @@
 
 #ifndef __ASSEMBLER__
 #include <stdarg.h>
+#include "printf.h"
 
-
+void print_num(int num) {
+    printf("Num is: %x\n", num);
+}
 
 void sys_write(char * buf);
 int sys_fork();

@@ -18,7 +18,7 @@ user_delay:
 	ret
 
 
-SYSCALL_WRAPPER write, 0
+SYSCALL_WRAPPER write_str, 0
 SYSCALL_WRAPPER fork, 1
 SYSCALL_WRAPPER exit, 2
 SYSCALL_WRAPPER delay_ticks, 3

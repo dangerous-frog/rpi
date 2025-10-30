@@ -60,7 +60,7 @@ struct cpu_context {
 	unsigned long pc;
 };
 
-#define MAX_PROCESS_PAGES			16	// 64 kB process
+#define MAX_PROCESS_PAGES			24	// 64 kB process
 
 struct user_page {
 	unsigned long phys_addr;

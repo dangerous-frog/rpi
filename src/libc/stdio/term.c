@@ -1,6 +1,5 @@
 #include "term.h"
-#include "printf.h"
-
+#include "user_printf.h"
 // 0 , 0 is top left corner
 static char buffer[CHAR_X_LEN][CHAR_Y_LEN];
 
@@ -15,8 +14,6 @@ void term_init(void (*clear_screen)(void), void (*write_buffer)(char* data, int 
 }
 
 void refresh_screen() {
-    buffer[0][0] = 'x';
-    buffer[CHAR_X_LEN -1][CHAR_Y_LEN - 1] = 'x';
     clear_screen_ptr();
     write_buffer_ptr((char*)buffer, CHAR_X_LEN, CHAR_Y_LEN);
 }
@@ -31,7 +28,7 @@ void write_char_to_buffer(void *p, char character) {
 void term_printf(char * fmt, ...) {
     va_list va;
     va_start(va, fmt);
-    tfp_format(0, write_char_to_buffer, fmt, va);
+    tfp_format_user(0, write_char_to_buffer, fmt, va);
     va_end(va);
 }
 
@@ -39,7 +36,8 @@ void clear_screen() {
     cursor = 0;
     for (int x = 0; x < CHAR_X_LEN; x++) {
         for (int y = 0; y < CHAR_Y_LEN; y++) {
-            buffer[CHAR_X_LEN][CHAR_Y_LEN] = 0;
+            buffer[x][y] = 0;
         }
     }
 }
+
