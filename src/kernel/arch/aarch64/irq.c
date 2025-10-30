@@ -37,7 +37,7 @@ void load_timer_interrupt() {
 	uint64_t count;
 	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
 	// timer_freq is 1 sec
-	count += timer_freq / 8192;  // 0.0004 //TODO: see if it does it
+	count += timer_freq / 128;  // 0.0004 //TODO: see if it does it
 	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
 }
 // TODO: this should include core, for now only 0
@@ -112,6 +112,7 @@ void show_invalid_entry_message(int type, unsigned long esr, unsigned long addre
 }
 
 void handle_irq(void) {
+	// printf("\nhandling\n");
     uint32_t irq_id = mmio_read(GICC_IAR) & 0x3FF;
     
 	if ( irq_id < NR_ISR) {
@@ -124,8 +125,8 @@ void handle_irq(void) {
 		case 30:
 			// Set next timer interrupt
 			// Because timer_tick will likely switch context, it's very important that we first process/restart the interrupt
-			load_timer_interrupt();
 			mmio_write(GICC_EOIR, irq_id);
+			load_timer_interrupt();
 			timer_tick();
 			break;
 			

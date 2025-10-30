@@ -154,7 +154,7 @@ void sched_init() {
 
     // Initialize first pointers for isr waiting
     for (int i = 0; i < NR_ISR; i++) {
-        wait_list[i] = kmalloc(sizeof(struct isr_wait_struct));
+        wait_list[i] = NULL;
     }
 }
 
