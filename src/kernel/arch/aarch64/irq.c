@@ -37,7 +37,7 @@ void load_timer_interrupt() {
 	uint64_t count;
 	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
 	// timer_freq is 1 sec
-	count += timer_freq / 2048;  // 0.0004 //TODO: see if it does it
+	count += timer_freq / 128;  // 0.0004 //TODO: see if it does it
 	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
 }
 // TODO: this should include core, for now only 0
@@ -71,24 +71,11 @@ void enable_interrupt(int irq_num)
 
 	// This code was for turning on external interrupt
 	// Set up what timer we want
-	// mmio_write(LOCAL_TIMER_CONTROL, (1 << 29) | (1 << 28) | CLOCK_TICKS); 
 	// Route that interrupt as normal IRQ not FIQ
 	// mmio_write(TIMER_CNTRL0, (1 << 1)); 
 	// Route that interrupt to our cpu
 	// mmio_write(PERI_IRQ_ROUTE0, (0x01 << 24) | (0));
-
-    
-    // Get timer frequency
-    asm volatile("mrs %0, cntfrq_el0" : "=r"(timer_freq));
-
-	load_timer_interrupt();	
-    
-    // Enable timer with interrupt
-    asm volatile("msr cntp_ctl_el0, %0" : : "r"(1));
-
-
 	
-
 
 	// Let's try the local timer
 	// while ( 1) {
@@ -101,9 +88,17 @@ void enable_interrupt(int irq_num)
 	// 		printf("No interrupt\n");
 	// 	}
 	// }
+}
 
-	
+void enable_timer() {
+	// Get timer frequency
+    asm volatile("mrs %0, cntfrq_el0" : "=r"(timer_freq));
+	printf("Freq %d\n",timer_freq );
 
+	load_timer_interrupt();	
+    
+    // Enable timer with interrupt
+    asm volatile("msr cntp_ctl_el0, %0" : : "r"(1));
 }
 
 void show_invalid_entry_message(int type, unsigned long esr, unsigned long address)
@@ -125,8 +120,8 @@ void handle_irq(void) {
 		case 30:
 			// Set next timer interrupt
 			// Because timer_tick will likely switch context, it's very important that we first process/restart the interrupt
-			load_timer_interrupt();
 			mmio_write(GICC_EOIR, irq_id);
+			load_timer_interrupt();
 			timer_tick();
 			break;
 			

@@ -83,6 +83,7 @@ void kernel_main()
     enable_irq();
     enable_interrupt(30);
     enable_interrupt(125);
+    enable_timer();
     drawString(100,100,"Hello world!",0x0f);
     
 

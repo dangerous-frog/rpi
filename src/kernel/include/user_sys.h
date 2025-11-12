@@ -10,20 +10,19 @@
 
 
 
-void call_sys_write(char * fmt, ...);
 void call_sys_write_str(char * buffer);
 
 void call_sys_write(char * fmt, ...) {
     char buf[256];
     
-    va_list va;
-    va_start(va, fmt);
-    tfp_sprintf_u(buf, fmt, va);  // Format into buffer
-    va_end(va);
-    call_sys_write_str(buf);  // Syscall with formatted string
+    // va_list va;
+    // va_start(va, fmt);
+    // tfp_sprintf_u(buf, fmt, va);  // Format into buffer
+    // va_end(va);
+    call_sys_write_str(fmt);  // Syscall with formatted string
 }
 int call_sys_fork();
-char call_sys_uart_read_char();
+char call_sys_uart_read_char(char * buf);
 void call_sys_exit();
 void call_sys_delay_ticks(long ticks);
 void call_sys_set_prio(int prio);

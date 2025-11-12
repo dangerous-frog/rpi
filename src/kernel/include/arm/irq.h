@@ -10,8 +10,6 @@
 #define TIMER_CNTRL0        (PBASE + 0x40)
 #define IRQ_SOURCE0         (PBASE + 0x60)
 
-#define CLOCK_TICKS         20000 // 250 000 000, should fit
-
 // Below we have the registers for the GIC
 #define GIC_BASE 0xFF840000 + VA_START
 
@@ -34,6 +32,7 @@
 #define GICC_HPPIR          (GICC + 0x0018)
 
 void enable_interrupt(int irq_num);
+void enable_timer();
 
 
 

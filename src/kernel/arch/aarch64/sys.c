@@ -1,18 +1,15 @@
 #include "printf.h"
 #include "sched.h"
 #include "mm.h"
+#include "user.h"
 #include "printf.h"
 #include "drivers/io.h"
 #include "drivers/fb.h"
 
 
 
-void sys_write(char * fmt, ...){
-	// Yeah, bit goofy, but works and this is LEARNING OS
-	va_list va;
-	va_start(va, fmt);
-	tfp_format(0, uart_writeChar, fmt, va);
-	va_end(va);
+void sys_write_str(char * buf){
+	printf("%s", buf);
 }
 
 int sys_fork(){
@@ -55,7 +52,7 @@ void sys_clear_screen() {
 }
 
 
-void * const sys_call_table[] = {	sys_write, sys_fork, sys_exit, sys_delay_ticks, 
+void * const sys_call_table[] = {	sys_write_str, sys_fork, sys_exit, sys_delay_ticks, 
 									sys_set_prio, sys_uart_read_char, sys_register_for_isr, sys_write_screen_buffer, sys_clear_screen};
 
 

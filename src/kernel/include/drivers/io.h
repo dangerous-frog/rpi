@@ -20,7 +20,7 @@ enum {
 };
 
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK/(baud*8))-1)
-#define RX_FIFO_LEN 50
+#define RX_FIFO_LEN 5
 void uart_debug_fifo_status();
 void uart_init();
 void uart_writeText(char *buffer);

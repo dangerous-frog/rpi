@@ -1,5 +1,5 @@
 #include "user_sys.h"
-#include "printf.h"
+// #include "printf.h"
 #include "term.h"
 
 
@@ -29,7 +29,7 @@ void loop(char* str)
 		term_printf("\nISR Fired %d\n", counter);
 		refresh_screen();
 		counter++;
-		call_sys_delay_ticks(1024);
+		call_sys_delay_ticks(128);
 	}
 }
 
@@ -46,15 +46,13 @@ void loop_constant(char* str)
 }
 
 void read_from_uart() {
+	char read[5];
+	call_sys_write("eo\n");
 	while (1) {
-		char read[12]; 
-		while (read != '\0') {
-			int len = call_sys_uart_read_char(read);
-			for (int i = 0; i < len; i++) {
-				call_sys_write("%c", read[i]);
-			}
-		}
-		
+		int len = call_sys_uart_read_char(read);
+		for (int i = 0; i < len; i++) {
+			call_sys_write("%c", read[i]);
+		}		
 	}
 }
 
