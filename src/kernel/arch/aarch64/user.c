@@ -13,7 +13,7 @@ void loop(char* str)
 	while (1){
 		call_sys_write("\nISR Fired %d\n", counter);
 		counter++;
-		call_sys_delay_ticks(128);
+		call_sys_delay_ticks(8192);
 	}
 }
 

@@ -277,7 +277,11 @@ int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) 
 		return -1;
 	}
 	memcpy(code_page, start, size); // Copies to virt memory we allocated
+    // The preemption and immediate switch is needed as otherwise and irq
+    // might pop in and mess up stuff
+    preempt_disable(); // From now on context switching is no bueno
 	set_pgd(current->mm.pgd); // activates translation tables for this process
+    cpu_switch_to(current, current); // We do the switcheroo, stupid but eh
 	return 0;
 }
 
