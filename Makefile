@@ -16,6 +16,10 @@ SRCDIR = src
 CFLAGS = -Wall -Og -g -ffreestanding -nostdlib -nostartfiles
 CFLAGS += -Isrc/kernel/include -Isrc/libc/include
 
+KERNEL_SRCS = $(shell find $(SRCDIR)/kernel -name '*.c' -o -name '*.S')
+LIBC_SRCS = $(shell find $(SRCDIR)/libc -name '*.c' -o -name '*.S')
+ALL_SRCS = $(KERNEL_SRCS) $(LIBC_SRCS)
+
 all: kernel8.img
 
 # Create build directory
@@ -23,7 +27,7 @@ $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
 
 # Build kernel and libc
-kernel8.img: $(BUILDDIR) 
+kernel8.img: $(BUILDDIR) $(ALL_SRCS) $(SRCDIR)/kernel/arch/aarch64/link.ld
 	$(MAKE) -C $(SRCDIR)/kernel BUILDDIR=../../$(BUILDDIR)
 	$(MAKE) -C $(SRCDIR)/libc BUILDDIR=../../$(BUILDDIR)
 	$(LD) -nostdlib -T $(SRCDIR)/kernel/arch/aarch64/link.ld \
