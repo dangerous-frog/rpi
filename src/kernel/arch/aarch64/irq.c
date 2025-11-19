@@ -26,7 +26,10 @@ const char *entry_error_messages[] = {
 	"SYNC_INVALID_EL0_32",		
 	"IRQ_INVALID_EL0_32",		
 	"FIQ_INVALID_EL0_32",		
-	"ERROR_INVALID_EL0_32"	
+	"ERROR_INVALID_EL0_32",	
+
+	"SYNC_ERROR",
+	"SYSCALL_ERROR"
 };
 
 static uint64_t timer_freq;
@@ -37,7 +40,8 @@ void load_timer_interrupt() {
 	uint64_t count;
 	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
 	// timer_freq is 1 sec
-	count += timer_freq / 8192;  // 0.0004 //TODO: see if it does it
+	count += timer_freq / 1024;  
+	// This is roughly 0.122 ms, going lower kills it
 	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
 }
 // TODO: this should include core, for now only 0

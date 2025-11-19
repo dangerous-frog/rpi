@@ -269,19 +269,44 @@ struct pt_regs * task_pt_regs(struct task_struct *tsk){ // To my understanding
 
 int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) {
     struct pt_regs *regs = task_pt_regs(current);
+    memzero((unsigned long)regs, sizeof(*regs));
 	regs->pstate = PSR_MODE_EL0t;
 	regs->pc = pc;
-	regs->sp = 2 *  PAGE_SIZE;  // For now, no more than 1 page text and 1 page stack
-	unsigned long code_page = allocate_user_page(current, 0);
-	if (code_page == 0)	{
-		return -1;
-	}
-	memcpy(code_page, start, size); // Copies to virt memory we allocated
-    // The preemption and immediate switch is needed as otherwise and irq
-    // might pop in and mess up stuff
-    preempt_disable(); // From now on context switching is no bueno
+    unsigned long num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;	
+    printf("num pages: %d\n", num_pages);
+    // Allocate as many pages as needed 
+    for(unsigned long i = 0; i < num_pages; i++) {
+        unsigned long virt_addr = i * PAGE_SIZE;
+        unsigned long phys_page = allocate_user_page(current, virt_addr);
+
+        
+
+        if (phys_page == 0) {
+            printf("Failed to allocate page %d\n", i);
+            return -1;
+        }
+
+        unsigned long copy_start = start + (i * PAGE_SIZE);
+
+        // printf("Page : 0x%x to virt 0x%x from actual 0x%x\n", phys_page, virt_addr, copy_start);
+
+        memcpy(phys_page, copy_start, PAGE_SIZE);
+    }
+
+    unsigned long stack_vaddr = num_pages * PAGE_SIZE;
+    unsigned long stack_page = allocate_user_page(current, stack_vaddr);
+    if (stack_page == 0) {
+        printf("Failed to allocate stack\n");
+        return -1;
+    }
+
+    regs->sp = stack_vaddr + PAGE_SIZE;
+
 	set_pgd(current->mm.pgd); // activates translation tables for this process
-    cpu_switch_to(current, current); // We do the switcheroo, stupid but eh
+    cpu_switch_to(current, current);
+    
+
+// Barriers
 	return 0;
 }
 

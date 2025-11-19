@@ -109,6 +109,7 @@ void uart_writeText(char *buffer) {
 }
 
 void uart_writeChar(void* p, char character) {
+    if (character == '\n') uart_writeByteBlockingActual('\r');
     uart_writeByteBlockingActual(character);
 }
 

@@ -5,20 +5,14 @@ BUILDDIR ?= build
 
 # Source files
 STDIO_CFILES = $(wildcard stdio/*.c)
-STRING_CFILES = $(wildcard string/*.c)
 
 # Object files
 STDIO_OBJS = $(addprefix $(BUILDDIR)/, $(notdir $(STDIO_CFILES:.c=.o)))
-STRING_OBJS = $(addprefix $(BUILDDIR)/, $(notdir $(STRING_CFILES:.c=.o)))
 
-all: $(STDIO_OBJS) $(STRING_OBJS)
+all: $(STDIO_OBJS)
 
 # stdio files
 $(BUILDDIR)/%.o: stdio/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# string files  
-$(BUILDDIR)/%.o: string/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
