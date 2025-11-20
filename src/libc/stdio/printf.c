@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include "printf.h"
+#define PRINTF_LONG_SUPPORT
 
 typedef void (*putcf) (void*,char);
 static putcf stdout_putf;
@@ -31,11 +32,11 @@ static void* stdout_putp;
 static void uli2a(unsigned long int num, unsigned int base, int uc,char * bf)
     {
     int n=0;
-    unsigned int d=1;
+    unsigned long d=1;
     while (num/d >= base)
         d*=base;
     while (d!=0) {
-        int dgt = num / d;
+        unsigned long dgt = num / d;
         num%=d;
         d/=base;
         if (n || dgt>0|| d==0) {

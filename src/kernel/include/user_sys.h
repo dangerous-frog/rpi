@@ -1,6 +1,7 @@
 #ifndef	_USER_SYS_H
 #define	_USER_SYS_H
 #include <stdarg.h>
+#include <stdint.h>
 
 
 
@@ -16,6 +17,8 @@ void call_sys_delay_ticks(long ticks);
 void call_sys_set_prio(int prio);
 void call_sys_write_char(void *p, char character);
 void call_sys_register_for_isr(int isr_num);
+void call_sys_clear_screen();
+void call_sys_write_screen_buffer(char *buf, uint8_t* needs_update, int size_x, int size_y);
 
 extern void user_delay ( unsigned long);
 extern unsigned long get_sp ( void );

@@ -26,7 +26,10 @@ const char *entry_error_messages[] = {
 	"SYNC_INVALID_EL0_32",		
 	"IRQ_INVALID_EL0_32",		
 	"FIQ_INVALID_EL0_32",		
-	"ERROR_INVALID_EL0_32"	
+	"ERROR_INVALID_EL0_32",	
+
+	"SYNC_ERROR",
+	"SYSCALL_ERROR"
 };
 
 static uint64_t timer_freq;
@@ -37,7 +40,8 @@ void load_timer_interrupt() {
 	uint64_t count;
 	asm volatile("mrs %0, cntpct_el0" : "=r"(count));
 	// timer_freq is 1 sec
-	count += timer_freq / 8192;  // 0.0004 //TODO: see if it does it
+	count += timer_freq / 1024;  
+	// This is roughly 0.122 ms, going lower kills it
 	asm volatile("msr cntp_cval_el0, %0" : : "r"(count));
 }
 // TODO: this should include core, for now only 0
@@ -108,10 +112,11 @@ void enable_interrupt(int irq_num)
 
 void show_invalid_entry_message(int type, unsigned long esr, unsigned long address)
 {
-	printf("%s, ESR: %x, address: %x\r\n", entry_error_messages[type], esr, address);
+	printf("%s, ESR: %x, address: %x\n", entry_error_messages[type], esr, address);
 }
 
 void handle_irq(void) {
+	// printf("\nhandling\n");
     uint32_t irq_id = mmio_read(GICC_IAR) & 0x3FF;
     
 	if ( irq_id < NR_ISR) {
@@ -124,8 +129,8 @@ void handle_irq(void) {
 		case 30:
 			// Set next timer interrupt
 			// Because timer_tick will likely switch context, it's very important that we first process/restart the interrupt
-			load_timer_interrupt();
 			mmio_write(GICC_EOIR, irq_id);
+			load_timer_interrupt();
 			timer_tick();
 			break;
 			

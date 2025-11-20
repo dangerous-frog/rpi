@@ -25,6 +25,12 @@ void heap_init() {
     first_block->prev_block = 0;
 }
 
+/*
+------------------------------------------
+| heap_block_t | some mem | heap_block_t |
+------------------------------------------
+*/
+
 void *kmalloc(unsigned long size) {
     // Check block by block until we find a free one or last
     heap_block_t *free_block_ptr = first_block;
@@ -62,8 +68,9 @@ void *kmalloc(unsigned long size) {
 }
 
 void kfree(void *ptr) {
+    //TODO: check if this works fully, I don't use it much yet
     // See where it points to
-    heap_block_t* block = (heap_block_t*)ptr;
+    heap_block_t* block = (heap_block_t*)((char*)ptr - sizeof(heap_block_t));
 
     if (!block->is_used)
         return; // Nothing to free
@@ -75,7 +82,7 @@ void kfree(void *ptr) {
         block = prev;
     }
     // If next is free, merge with ours
-    if (block->prev_block != 0 && !block->prev_block->is_used) {
+    if (block->next_block != 0 && !block->next_block->is_used) {
         heap_block_t* next = block->next_block;
         block->next_block = next->next_block;
     }

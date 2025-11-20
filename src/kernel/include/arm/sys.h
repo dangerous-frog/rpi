@@ -1,12 +1,8 @@
 #ifndef SYS_H
 #define SYS_H
 
-#define __NR_syscalls 8
+#define __NR_syscalls 16
 
-#define SYS_WRITE_NUMBER 0
-#define SYS_MALLOC_NUMBER 1
-#define SYS_CLONE_NUMBER 2
-#define SYS_EXIT_NUMBER 3
 
 #define ESR_ELx_EC_SHIFT		26
 #define ESR_ELx_EC_SVC64		0x15
@@ -19,7 +15,6 @@
 
 void sys_write(char * buf);
 int sys_fork();
-
 void call_sys_write(char * fmt, ...);
 void call_sys_write_char(void *p, char character);
 char call_sys_uart_read_char(char * buf);
