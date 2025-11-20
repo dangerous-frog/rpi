@@ -36,7 +36,7 @@ void read_from_uart() {
 		while (read != '\0') {
 			int len = call_sys_uart_read_char(read);
 			for (int i = 0; i < len; i++) {
-				call_sys_write("%c", read[i]);
+				call_sys_write("%d", read[i]);
 				term_printf("%c", read[i]);
 			}	
 		}

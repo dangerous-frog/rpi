@@ -20,15 +20,23 @@ void term_init(void (*clear_screen)(void), void (*write_buffer)(char* data, uint
 }
 
 void refresh_screen() {
-    // clear_screen_ptr();
     write_buffer_ptr((char*)buffer, (uint8_t*)needs_update, CHAR_X_LEN, CHAR_Y_LEN);
 }
 
 void write_char_to_buffer(void *p, char character) {
-    if (character < 26 || character > 126) 
+    if (character == '\r') {
+        cursor = ((cursor / CHAR_X_LEN) + 1) * CHAR_X_LEN;
         return;
-    if (character == '\n')
-        cursor += CHAR_X_LEN;
+    }
+    
+    if (character == 127) {
+        cursor--;
+        int pos_x = cursor % CHAR_X_LEN;
+        int pos_y = cursor / CHAR_X_LEN;
+        buffer[pos_x][pos_y] = ' ';
+        needs_update[pos_x][pos_y] = 1;
+        return;
+    }
     int pos_x = cursor % CHAR_X_LEN;
     int pos_y = cursor / CHAR_X_LEN;
     buffer[pos_x][pos_y] = character;
