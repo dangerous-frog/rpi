@@ -1,7 +1,7 @@
 #ifndef SYS_H
 #define SYS_H
 
-#define __NR_syscalls 8
+#define __NR_syscalls 16
 
 
 #define ESR_ELx_EC_SHIFT		26

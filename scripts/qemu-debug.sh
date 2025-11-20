@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start QEMU in background
-qemu-system-aarch64 -M raspi4b -serial null -serial stdio -semihosting -display none -semihosting-config enable=on,target=native\
+qemu-system-aarch64 -M raspi4b -serial null -serial stdio -semihosting -semihosting-config enable=on,target=native\
     -d int,mmu \
     -kernel kernel8.img -s -S &
 QEMU_PID=$!
