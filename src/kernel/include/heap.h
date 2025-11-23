@@ -19,3 +19,17 @@ typedef struct heap_block {
 void heap_init();
 void* kmalloc(unsigned long size);
 void kfree(void* ptr);
+
+
+/*
+1. Mamy blok i nic po nim
+Nowy blok, tworzymy kolejny pusty
+
+2. Mamy blok i duza szpare przed kolejnym
+Nowy blok, tworzymy kolejny pusty i laczymy go do poprzedniego next
+
+3. Mamy blok i idealną szpare 
+Blok zostaje used i nic sie nie zmienia
+
+
+*/

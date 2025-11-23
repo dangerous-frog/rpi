@@ -60,7 +60,7 @@ struct cpu_context {
 	unsigned long pc;
 };
 
-#define MAX_PROCESS_PAGES			32	// 128 kB process
+#define MAX_PROCESS_PAGES			48	// 128 kB process
 
 struct user_page {
 	unsigned long phys_addr;
@@ -82,6 +82,7 @@ struct task_struct {
 	enum TASK_STATE state;	
 	long counter;
 	long priority;
+	long id;
 	long preempt_count; // if > 0, then critical section
 	unsigned long stack;
 	unsigned long flags;
@@ -117,6 +118,7 @@ void register_for_isr(int isr_num);
     /* state */       TASK_RUNNING, \
     /* counter */     0, \
     /* priority */    15, \
+	/* process id*/   0, \
     /* preempt_count */ 0, \
     /* stack */       0, \
     /* flags */       PF_KTHREAD, \

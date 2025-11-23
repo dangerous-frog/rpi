@@ -1,5 +1,6 @@
 arm-gnu-toolchain
 kernel8.img
+user.elf
 build
 .vscode/
 note.txt
