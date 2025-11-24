@@ -19,6 +19,9 @@ struct isr_wait_struct* wait_list[NR_ISR];
 
 void add_to_isr_list(int isr_num, long time, struct task_struct* task_ptr) {
     struct isr_wait_struct* new = kmalloc(sizeof(struct isr_wait_struct));
+    if (new == 0) {
+        printf("Failed to register isr\n");
+    }
     new->ticks_to_wait = time;
     new->task_ptr = task_ptr;
 
@@ -52,6 +55,7 @@ void add_to_isr_list(int isr_num, long time, struct task_struct* task_ptr) {
         // We are last, we can just add remaining time
         isr_ptr->next = new;
         new->next = NULL;
+        new->ticks_to_wait -= isr_ptr->ticks_to_wait;
     } else {
         // This means there is another element, and it was bigger than our current time
         new->next = isr_ptr->next;
@@ -62,7 +66,9 @@ void add_to_isr_list(int isr_num, long time, struct task_struct* task_ptr) {
 
 void register_for_isr(int isr_num) {
     preempt_disable();
+    disable_irq();
     add_to_isr_list(isr_num, 0, current);
+    enable_irq();
     preempt_enable();
 }
 
@@ -131,6 +137,7 @@ void _schedule(void) {
 			}
 		}
 	}
+    // printf("[sched] Scheduling task %d\n", task[next]->id);
 	switch_to(task[next]);
 	preempt_enable();
 }
@@ -212,8 +219,9 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
         return 1;
     struct pt_regs *childregs = task_pt_regs(p);
 	memzero((unsigned long)childregs, sizeof(struct pt_regs));
+    int kernel_thread = (clone_flags & PF_KTHREAD);
 
-    if (clone_flags & PF_KTHREAD) {
+    if (kernel_thread) {
         // It is kernel thread, we do same
         p->cpu_context.x19 = fn;
         p->cpu_context.x20 = arg;
@@ -222,9 +230,11 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
         struct pt_regs * cur_regs = task_pt_regs(current);
 		*childregs = *cur_regs;
 		childregs->regs[0] = 0;
-		childregs->sp = stack + PAGE_SIZE;
-		p->stack = stack;
         copy_virt_memory(p); // We need to copy virt mem in user space
+        childregs->sp = cur_regs->sp;
+		p->stack = childregs->sp - PAGE_SIZE;
+        // printf("New task\n");
+        // printf("Stack at %lx with page at %lx\n", childregs->sp, p->stack);
     }
 
     p->flags = clone_flags;
@@ -257,6 +267,11 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     }
 
     task[pid] = p;
+    task[pid]->id = pid;
+    // if (kernel_thread)
+    //     printf("[sched] Spawned kernel task %d\n", pid);
+    // else
+    //     printf("[sched] Spawned user task %d\n", pid);
     preempt_enable();
     return pid;
 }
@@ -273,7 +288,7 @@ int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) 
 	regs->pstate = PSR_MODE_EL0t;
 	regs->pc = pc;
     unsigned long num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;	
-    printf("num pages: %d\n", num_pages);
+    // printf("num pages: %d\n", num_pages);
     // Allocate as many pages as needed 
     for(unsigned long i = 0; i < num_pages; i++) {
         unsigned long virt_addr = i * PAGE_SIZE;
@@ -285,6 +300,7 @@ int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) 
             printf("Failed to allocate page %d\n", i);
             return -1;
         }
+        // printf("Mapped virt %lx to phys %lx\n", virt_addr, phys_page);
 
         unsigned long copy_start = start + (i * PAGE_SIZE);
 
@@ -295,12 +311,16 @@ int move_to_user_mode(unsigned long start, unsigned long size,unsigned long pc) 
 
     unsigned long stack_vaddr = num_pages * PAGE_SIZE;
     unsigned long stack_page = allocate_user_page(current, stack_vaddr);
+    
     if (stack_page == 0) {
         printf("Failed to allocate stack\n");
         return -1;
     }
 
     regs->sp = stack_vaddr + PAGE_SIZE;
+
+    // printf("Stack page at %lx with sp at %lx\n", stack_vaddr, regs->sp);
+    // printf("[sched] Moved task %d to user mode\n", current->id);
 
 	set_pgd(current->mm.pgd); // activates translation tables for this process
     cpu_switch_to(current, current);
@@ -315,6 +335,7 @@ void exit_process(){
     for (int i = 0; i < nr_tasks; i++){
         if (task[i] == current) {
             task[i]->state = TASK_ZOMBIE;
+            printf("[sched] Exited task %d\n", i);
             break;
         }
     }

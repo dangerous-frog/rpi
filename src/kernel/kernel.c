@@ -68,13 +68,13 @@ void kernel_main()
 
     init_printf(0, uart_writeChar);    
 
-    uart_debug_fifo_status();
+    // uart_debug_fifo_status();
 
     uart_init();
     fb_init();
     irq_vector_init();
 
-    uart_debug_fifo_status();
+    // uart_debug_fifo_status();
 
     heap_init();
     sched_init();

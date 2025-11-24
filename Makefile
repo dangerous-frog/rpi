@@ -3,9 +3,9 @@ GCCPATH = $(PWD)/arm-gnu-toolchain/bin
 CC = $(GCCPATH)/aarch64-none-elf-gcc
 LD = $(GCCPATH)/aarch64-none-elf-ld
 OBJCOPY = $(GCCPATH)/aarch64-none-elf-objcopy
-
 # 
 export CC
+export LD
 export CFLAGS
 
 # Build directories
@@ -20,7 +20,7 @@ KERNEL_SRCS = $(shell find $(SRCDIR)/kernel -name '*.c' -o -name '*.S')
 LIBC_SRCS = $(shell find $(SRCDIR)/libc -name '*.c' -o -name '*.S')
 ALL_SRCS = $(KERNEL_SRCS) $(LIBC_SRCS)
 
-all: kernel8.img
+all: kernel8.img user.elf
 
 # Create build directory
 $(BUILDDIR):
@@ -34,8 +34,13 @@ kernel8.img: $(BUILDDIR) $(ALL_SRCS) $(SRCDIR)/kernel/arch/aarch64/link.ld
 		$(BUILDDIR)/*.o build/*/*.o -o $(BUILDDIR)/kernel8.elf
 	$(OBJCOPY) -O binary $(BUILDDIR)/kernel8.elf kernel8.img
 
+# Build user.elf for debugging
+user.elf: kernel8.img
+	$(LD) -T $(SRCDIR)/kernel/arch/aarch64/user_debug.ld -o user.elf \
+		$(BUILDDIR)/user.o $(BUILDDIR)/term.o $(BUILDDIR)/user_printf.o $(BUILDDIR)/user_sys_asm.o
+
 clean:
-	rm -rf $(BUILDDIR) kernel8.img || true
+	rm -rf $(BUILDDIR) kernel8.img user.elf || true
 	$(MAKE) -C $(SRCDIR)/kernel clean
 	$(MAKE) -C $(SRCDIR)/libc clean
 
